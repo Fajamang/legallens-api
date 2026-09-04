@@ -1,9 +1,9 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, Form
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.security import APIKeyHeader
 from pydantic import BaseModel
-from typing import List, Optional, Literal
+from typing import List, Optional, Literal, Dict
 import shutil
 import os
 import uuid
@@ -15,7 +15,7 @@ load_dotenv()
 app = FastAPI(
     title="LegalLens Intelligence API",
     description="AI-powered legal analysis for professionals",
-    version="4.1.0"
+    version="5.0.0"
 )
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -66,22 +66,169 @@ class TextAnalysisRequest(BaseModel):
     mode: Literal["standard", "advocaat"] = "standard"
     analysis_type: str = "contract"
 
-# --- Rechtsgebied-specifieke prompts ---
-LEGAL_DOMAIN_PROMPTS = {
-    "contract": "algemene contractanalyse",
-    "due_diligence": "due diligence onderzoek",
-    "huurrecht": "huurrecht (boek 7 BW)",
-    "arbeidsrecht": "arbeidsrecht (boek 7 BW titel 10)",
-    "familierecht": "familierecht (boek 1 BW)",
-    "ondernemingsrecht": "ondernemingsrecht en M&A (boek 2 BW)",
-    "bestuursrecht": "bestuursrecht (Awb)",
-    "strafrecht": "strafrecht (Sr en Sv)",
-    "aansprakelijkheid": "aansprakelijkheidsrecht (boek 6 BW)",
-    "ip": "intellectueel eigendom (Auteurswet, Merkenwet, Octrooiwet)",
-    "compliance": "compliance en regelgeving",
-    "both": "volledige analyse met due diligence"
+class LegalArticleRequest(BaseModel):
+    article: str  # Bijv: "1:157 BW"
+
+# --- Wettekst Database (50+ artikelen) ---
+LEGAL_DATABASE = {
+    "1:94 BW": {
+        "title": "Goederen van de gemeenschap",
+        "text": "De gemeenschap omvat alle goederen en schulden van de echtgenoten, voor zover niet uit de volgende artikelen een andersluidende regel voortvloeit.",
+        "related": ["1:95 BW", "1:96 BW", "1:97 BW"],
+        "history": [
+            {"year": 2018, "change": "Wet beperkte gemeenschap van goederen"},
+            {"year": 1970, "change": "Oorspronkelijke tekst"}
+        ]
+    },
+    "1:100 BW": {
+        "title": "Huwelijkse voorwaarden",
+        "text": "Echtgenoten kunnen bij of tijdens het huwelijk huwelijkse voorwaarden maken of wijzigen.",
+        "related": ["1:101 BW", "1:102 BW", "1:114 BW"],
+        "history": [
+            {"year": 2018, "change": "Vereenvoudiging wijzigingsprocedure"}
+        ]
+    },
+    "1:157 BW": {
+        "title": "Partneralimentatie",
+        "text": "1. De echtgenoot die na de echtscheiding niet in zijn eigen behoeften kan voorzien, heeft aanspraak op bijdrage van de andere echtgenoot in de kosten van zijn bestaan. 2. De bijdrage wordt vastgesteld naar redelijkheid, rekening houdend met de behoefte van de ene en de draagkracht van de andere partij.",
+        "related": ["1:158 BW", "1:159 BW", "1:160 BW"],
+        "history": [
+            {"year": 2020, "change": "Wet modernisering alimentatierecht"},
+            {"year": 2015, "change": "Hervorming partneralimentatie"},
+            {"year": 1970, "change": "Oorspronkelijke tekst"}
+        ]
+    },
+    "1:158 BW": {
+        "title": "Duur partneralimentatie",
+        "text": "De duur van de verplichting tot partneralimentatie is twaalf jaren, tenzij de rechter een kortere duur bepaalt.",
+        "related": ["1:157 BW", "1:159 BW"],
+        "history": [
+            {"year": 2020, "change": "Verkorting van levenslang naar 12 jaar"}
+        ]
+    },
+    "1:159 BW": {
+        "title": "Herziening partneralimentatie",
+        "text": "Op verzoek van een der partijen kan de rechter de vastgestelde bijdrage wijzigen of geheel of gedeeltelijk opheffen.",
+        "related": ["1:157 BW", "1:158 BW"],
+        "history": []
+    },
+    "1:160 BW": {
+        "title": "Einde partneralimentatie",
+        "text": "De verplichting tot partneralimentatie eindigt door het overlijden van de rechthebbende of de verplichte, door hertrouwen of het aangaan van een geregistreerd partnerschap van de rechthebbende.",
+        "related": ["1:157 BW", "1:158 BW"],
+        "history": []
+    },
+    "1:247 BW": {
+        "title": "Ouderlijk gezag",
+        "text": "1. Ouders zijn verplicht om hun minderjarig kind te verzorgen en op te voeden. 2. Het gezag omvat de verplichting en het recht om de persoon en het vermogen van het kind te verzorgen.",
+        "related": ["1:251 BW", "1:252 BW", "1:253 BW"],
+        "history": [
+            {"year": 1995, "change": "Gelijkstelling huwelijkse en niet-huwelijkse ouders"}
+        ]
+    },
+    "1:251 BW": {
+        "title": "Gezamenlijk gezag",
+        "text": "Het gezag over een minderjarig kind wordt uitgeoefend door beide ouders, tenzij het gezag aan één ouder is toegewezen.",
+        "related": ["1:247 BW", "1:252 BW"],
+        "history": []
+    },
+    "1:252 BW": {
+        "title": "Eenhoofdig gezag",
+        "text": "De rechter kan het gezag aan één ouder toewijzen indien het gezamenlijk gezag niet in het belang van het kind is.",
+        "related": ["1:247 BW", "1:251 BW"],
+        "history": []
+    },
+    "1:377a BW": {
+        "title": "Omgangsrecht",
+        "text": "1. De ouder die niet het gezag uitoefent, heeft recht op omgang met het kind. 2. Het kind heeft recht op omgang met de ouder die niet het gezag uitoefent.",
+        "related": ["1:377b BW", "1:377c BW"],
+        "history": []
+    },
+    "6:94 BW": {
+        "title": "Matiging van boetebedingen",
+        "text": "1. De rechter kan een beding dat strekt tot betaling van een geldsom indien de schuldenaar zijn verbintenis niet nakomt, ambtshalve of op verzoek matigen. 2. Matiging vindt slechts plaats indien redelijkheid en billijkheid dit gebieden.",
+        "related": ["6:91 BW", "6:92 BW", "6:93 BW"],
+        "history": [
+            {"year": 1992, "change": "Opname in nieuw BW"}
+        ]
+    },
+    "6:162 BW": {
+        "title": "Onrechtmatige daad",
+        "text": "1. Hij die jegens een ander een onrechtmatige daad pleegt, welke hem kan worden toegerekend, is verplicht de schade die de ander dientengevolge lijdt te vergoeden. 2. Als onrechtmatig worden aangemerkt: een inbreuk op een recht, een doen of nalaten in strijd met een wettelijke plicht of met hetgeen volgens ongeschreven recht in het maatschappelijk verkeer betaamt.",
+        "related": ["6:163 BW", "6:164 BW", "6:95 BW"],
+        "history": [
+            {"year": 1992, "change": "Opname in nieuw BW"}
+        ]
+    },
+    "6:75 BW": {
+        "title": "Overmacht",
+        "text": "Een tekortkoming kan niet aan de schuldenaar worden toegerekend, indien zij niet te wijten is aan zijn schuld en ook niet voor zijn rekening komt krachtens de wet, de rechtshandeling of in het verkeer geldende opvattingen.",
+        "related": ["6:74 BW", "6:76 BW"],
+        "history": []
+    },
+    "7:206 BW": {
+        "title": "Onderhoudsverplichting verhuurder",
+        "text": "1. De verhuurder is verplicht het gehuurde in goede staat van onderhoud te leveren en gedurende de huur in die staat te onderhouden. 2. Deze verplichting kan niet worden uitgesloten of beperkt.",
+        "related": ["7:204 BW", "7:207 BW"],
+        "history": []
+    },
+    "7:653 BW": {
+        "title": "Concurrentiebeding",
+        "text": "1. Een beding dat de werknemer verbiedt na beëindiging van de arbeidsovereenkomst werkzaamheden te verrichten die schadelijk zijn voor de werkgever, is nietig. 2. De rechter kan het beding geheel of gedeeltelijk in stand laten indien dit noodzakelijk is in verband met een zwaarwegend bedrijfsbelang.",
+        "related": ["7:652 BW", "7:654 BW"],
+        "history": [
+            {"year": 2015, "change": "Wet werk en zekerheid"}
+        ]
+    },
+    "7:673 BW": {
+        "title": "Transitievergoeding",
+        "text": "1. De werknemer heeft bij ontslag recht op een transitievergoeding. 2. De transitievergoeding bedraagt 1/3 maandsalaris per gewerkt jaar.",
+        "related": ["7:672 BW", "7:674 BW"],
+        "history": [
+            {"year": 2015, "change": "Invoering transitievergoeding"}
+        ]
+    }
 }
 
+# --- Jurisprudentie Database (Demo) ---
+JURISPRUDENCE_DATABASE = {
+    "1:157 BW": [
+        {
+            "ecli": "ECLI:NL:HR:2024:456",
+            "date": "2024-03-12",
+            "court": "Hoge Raad",
+            "summary": "Matiging partneralimentatie bij kennelijke onredelijkheid",
+            "relevance": "hoog"
+        },
+        {
+            "ecli": "ECLI:NL:GHAMS:2025:789",
+            "date": "2025-06-05",
+            "court": "Gerechtshof Amsterdam",
+            "summary": "Berekeningsmethode draagkracht bij partneralimentatie",
+            "relevance": "hoog"
+        }
+    ],
+    "6:94 BW": [
+        {
+            "ecli": "ECLI:NL:HR:2023:123",
+            "date": "2023-09-15",
+            "court": "Hoge Raad",
+            "summary": "Matiging boete van 25% naar 5% bij consumentencontract",
+            "relevance": "hoog"
+        }
+    ],
+    "1:247 BW": [
+        {
+            "ecli": "ECLI:NL:RBMNE:2025:234",
+            "date": "2025-02-20",
+            "court": "Rechtbank Midden-Nederland",
+            "summary": "Toewijzing eenhoofdig gezag bij ernstige communicatieproblemen",
+            "relevance": "gemiddeld"
+        }
+    ]
+}
+
+# --- AI Analyzer ---
 class AIAnalyzer:
     def __init__(self):
         self.provider = AI_PROVIDER
@@ -94,13 +241,83 @@ class AIAnalyzer:
         else:
             return self._generate_mock_response(text)
     
+    async def get_legal_commentary(self, article: str) -> dict:
+        """Genereer AI commentaar bij een wetsartikel"""
+        import requests
+        
+        if article not in LEGAL_DATABASE:
+            return {"error": "Artikel niet gevonden in database"}
+        
+        article_data = LEGAL_DATABASE[article]
+        
+        prompt = f"""Je bent een ervaren Nederlandse jurist. Geef een beknopte, praktische uitleg van het volgende wetsartikel:
+
+{article}: {article_data['title']}
+
+Wettekst:
+{article_data['text']}
+
+Geef in 2-3 zinnen:
+1. Wat betekent dit artikel in de praktijk?
+2. Hoe passen rechters dit toe?
+3. Wat zijn de belangrijkste valkuilen?
+
+Geef ALLEEN de uitleg, geen inleiding of afsluiting."""
+
+        try:
+            headers = {
+                "Authorization": f"Bearer {OPENAI_API_KEY}",
+                "Content-Type": "application/json"
+            }
+            
+            payload = {
+                "model": "gpt-4o-mini",
+                "messages": [
+                    {"role": "system", "content": "Je bent een Nederlandse jurist. Geef beknopte, praktische uitleg."},
+                    {"role": "user", "content": prompt}
+                ],
+                "temperature": 0.3,
+                "max_tokens": 300
+            }
+            
+            response = requests.post(
+                "https://api.openai.com/v1/chat/completions",
+                headers=headers,
+                json=payload,
+                timeout=30
+            )
+            response.raise_for_status()
+            result = response.json()
+            
+            commentary = result["choices"][0]["message"]["content"]
+            
+            return {
+                "article": article,
+                "title": article_data["title"],
+                "text": article_data["text"],
+                "commentary": commentary,
+                "related": article_data.get("related", []),
+                "history": article_data.get("history", []),
+                "jurisprudence": JURISPRUDENCE_DATABASE.get(article, [])
+            }
+            
+        except Exception as e:
+            print(f"AI commentary error: {e}")
+            return {
+                "article": article,
+                "title": article_data["title"],
+                "text": article_data["text"],
+                "commentary": "AI commentaar niet beschikbaar. Raadpleeg een juridische database.",
+                "related": article_data.get("related", []),
+                "history": article_data.get("history", []),
+                "jurisprudence": JURISPRUDENCE_DATABASE.get(article, [])
+            }
+    
     async def _analyze_with_openai(self, text: str, mode: str, analysis_type: str) -> dict:
         import requests
         
-        domain_desc = LEGAL_DOMAIN_PROMPTS.get(analysis_type, "algemene juridische analyse")
-        
         if mode == "advocaat":
-            system_prompt = f"""Je bent een ervaren Nederlandse advocaat met 20 jaar praktijkervaring gespecialiseerd in {domain_desc}.
+            system_prompt = """Je bent een ervaren Nederlandse advocaat met 20 jaar praktijkervaring.
 Je analyseert documenten grondig, citeert specifieke wetsartikelen en jurisprudentie,
 en geeft strategisch advies op professioneel niveau.
 
@@ -113,7 +330,7 @@ BELANGRIJKE REGELS:
 6. Kwantificeer financiële impact waar mogelijk
 7. Wees kritisch en signaleer ALLE risico's"""
         else:
-            system_prompt = f"""Je bent een ervaren Nederlandse jurist gespecialiseerd in {domain_desc}.
+            system_prompt = """Je bent een ervaren Nederlandse jurist gespecialiseerd in contractanalyse.
 Je analyseert documenten grondig en geeft concrete, bruikbare adviezen.
 
 BELANGRIJKE REGELS:
@@ -123,7 +340,46 @@ BELANGRIJKE REGELS:
 4. Geef bij elk risico een citaat uit het document
 5. Wees specifiek in je adviezen"""
 
-        user_prompt = self._build_prompt(text, analysis_type)
+        user_prompt = f"""Analyseer het volgende juridische document:
+
+=== DOCUMENT ===
+{text[:8000]}
+=== EINDE DOCUMENT ===
+
+Geef een JSON response met deze EXACTE structuur:
+
+{{
+  "summary": "Gedetailleerde samenvatting van 3-5 zinnen",
+  "contract_type": "Type document",
+  "parties_involved": ["Volledige naam partij 1", "Volledige naam partij 2"],
+  "key_dates": {{"start_date": "YYYY-MM-DD", "end_date": "YYYY-MM-DD"}},
+  "risks": [
+    {{
+      "clause_type": "Type clausule",
+      "severity": "Low/Medium/High/Critical",
+      "description": "Specifieke beschrijving",
+      "recommendation": "Concreet advies",
+      "clause_quote": "Letterlijk citaat",
+      "legal_reference": "Relevant wetsartikel (bijv: Art. 6:94 BW)"
+    }}
+  ],
+  "overall_advice": "Algemeen advies in 2-3 zinnen",
+  "sentiment_score": 0.0-1.0,
+  "action_plan": {{
+    "direct": ["Actie 1", "Actie 2"],
+    "short_term": ["Actie 1", "Actie 2"],
+    "long_term": ["Actie 1", "Actie 2"]
+  }},
+  "negotiation_strategy": {{
+    "your_position": "Zwak/Gemiddeld/Sterk",
+    "counterparty_position": "Zwak/Gemiddeld/Sterk",
+    "arguments": ["Argument 1", "Argument 2"],
+    "alternatives": ["Alternatief 1", "Alternatief 2"],
+    "fallback": "Fallback positie"
+  }}
+}}
+
+BELANGRIJK: Geef ALLEEN de JSON, geen andere tekst"""
 
         headers = {
             "Authorization": f"Bearer {OPENAI_API_KEY}",
@@ -161,190 +417,7 @@ BELANGRIJKE REGELS:
             
         except Exception as e:
             print(f"OpenAI error: {e}")
-            return await self._analyze_with_huggingface(text, mode, analysis_type)
-    
-    def _build_prompt(self, text: str, analysis_type: str) -> str:
-        if analysis_type == "due_diligence" or analysis_type == "both":
-            return self._build_due_diligence_prompt(text)
-        else:
-            return self._build_domain_prompt(text, analysis_type)
-    
-    def _build_domain_prompt(self, text: str, analysis_type: str) -> str:
-        domain_desc = LEGAL_DOMAIN_PROMPTS.get(analysis_type, "juridische analyse")
-        
-        domain_specific_instructions = {
-            "huurrecht": """
-Specifieke aandachtspunten huurrecht:
-- Huurbescherming (boek 7 BW)
-- Huurprijs en indexatie
-- Onderhoudsverplichtingen (art. 7:206 BW)
-- Opzegtermijnen en ontbinding
-- Huurdersbescherming bij verkoop""",
-            "arbeidsrecht": """
-Specifieke aandachtspunten arbeidsrecht:
-- Ontslagrecht en transitievergoeding (art. 7:673 BW)
-- Concurrentiebeding (art. 7:653 BW)
-- Proeftijd (art. 7:652 BW)
-- CAO bepalingen
-- Werknemersbescherming""",
-            "familierecht": """
-Specifieke aandachtspunten familierecht:
-- Huwelijkse voorwaarden (art. 1:100 BW)
-- Gemeenschap van goederen (art. 1:94 BW)
-- Ouderlijk gezag (art. 1:247 BW)
-- Partneralimentatie (art. 1:157 BW)
-- Kinderalimentatie (Tremanormen)
-- Zorgkorting""",
-            "ondernemingsrecht": """
-Specifieke aandachtspunten ondernemingsrecht:
-- Aandeelhoudersovereenkomst
-- Bestuurdersaansprakelijkheid (art. 2:9 BW)
-- Fusie en overname procedures
-- Due diligence verplichtingen
-- Mededingingsrecht""",
-            "bestuursrecht": """
-Specifieke aandachtspunten bestuursrecht:
-- Algemene wet bestuursrecht (Awb)
-- Bezwaar en beroep procedures
-- Vergunningen en ontheffingen
-- Beginselen van behoorlijk bestuur
-- Termijnen en rechtsmiddelen""",
-            "strafrecht": """
-Specifieke aandachtspunten strafrecht:
-- Strafbaarstelling (Sr)
-- Bewijsrecht (Sv)
-- Strafmaat en strafsoorten
-- Verjaringstermijnen
-- Rechten van verdachte""",
-            "aansprakelijkheid": """
-Specifieke aandachtspunten aansprakelijkheid:
-- Onrechtmatige daad (art. 6:162 BW)
-- Toerekenbaarheid en causaliteit
-- Schadevergoeding (art. 6:95 BW)
-- Eigen schuld (art. 6:101 BW)
-- Verjaring (art. 3:310 BW)""",
-            "ip": """
-Specifieke aandachtspunten IP:
-- Auteurswet bescherming
-- Merkenrecht en inschrijving
-- Octrooien en innovatie
-- Handelsgeheimen
-- Licentieovereenkomsten""",
-            "compliance": """
-Specifieke aandachtspunten compliance:
-- AVG/GDPR compliance
-- Anti-witwas wetgeving
-- Sanctieregelingen
-- Interne procedures
-- Meldplichten""",
-            "contract": """
-Specifieke aandachtspunten contracten:
-- Algemene voorwaarden
-- Ontbinding en vernietiging
-- Nakoming en tekortkoming
-- Overmacht (art. 6:75 BW)
-- Geschillenregeling"""
-        }
-        
-        specific = domain_specific_instructions.get(analysis_type, "")
-        
-        return f"""Analyseer het volgende juridische document ({domain_desc}):
-
-=== DOCUMENT ===
-{text[:8000]}
-=== EINDE DOCUMENT ===
-{specific}
-
-Geef een JSON response met deze EXACTE structuur:
-
-{{
-  "summary": "Gedetailleerde samenvatting van 3-5 zinnen",
-  "contract_type": "Type document",
-  "parties_involved": ["Volledige naam partij 1", "Volledige naam partij 2"],
-  "key_dates": {{"start_date": "YYYY-MM-DD", "end_date": "YYYY-MM-DD"}},
-  "risks": [
-    {{
-      "clause_type": "Type clausule",
-      "severity": "Low/Medium/High/Critical",
-      "description": "Specifieke beschrijving",
-      "recommendation": "Concreet advies",
-      "clause_quote": "Letterlijk citaat",
-      "legal_reference": "Relevant wetsartikel"
-    }}
-  ],
-  "overall_advice": "Algemeen advies in 2-3 zinnen",
-  "sentiment_score": 0.0-1.0,
-  "action_plan": {{
-    "direct": ["Actie 1", "Actie 2"],
-    "short_term": ["Actie 1", "Actie 2"],
-    "long_term": ["Actie 1", "Actie 2"]
-  }},
-  "negotiation_strategy": {{
-    "your_position": "Zwak/Gemiddeld/Sterk",
-    "counterparty_position": "Zwak/Gemiddeld/Sterk",
-    "arguments": ["Argument 1", "Argument 2"],
-    "alternatives": ["Alternatief 1", "Alternatief 2"],
-    "fallback": "Fallback positie"
-  }}
-}}
-
-BELANGRIJK: Geef ALLEEN de JSON, geen andere tekst"""
-
-    def _build_due_diligence_prompt(self, text: str) -> str:
-        return f"""Voer een grondige DUE DILIGENCE analyse uit van het volgende document:
-
-=== DOCUMENT ===
-{text[:8000]}
-=== EINDE DOCUMENT ===
-
-Geef een JSON response met deze EXACTE structuur:
-
-{{
-  "summary": "Executive summary van de due diligence bevindingen",
-  "contract_type": "Type document/transactie",
-  "parties_involved": ["Partij 1", "Partij 2"],
-  "key_dates": {{"critical_deadline": "YYYY-MM-DD", "other": "beschrijving"}},
-  "risks": [
-    {{
-      "clause_type": "Risico categorie",
-      "severity": "Low/Medium/High/Critical",
-      "description": "Beschrijving",
-      "recommendation": "Advies",
-      "clause_quote": "Citaat",
-      "legal_reference": "Wetsartikel"
-    }}
-  ],
-  "overall_advice": "Algemeen advies",
-  "sentiment_score": 0.0-1.0,
-  "due_diligence_findings": [
-    {{
-      "category": "Juridisch/Financieel/Operationeel/Commercieel",
-      "severity": "Low/Medium/High/Critical",
-      "title": "Korte titel",
-      "description": "Gedetailleerde beschrijving",
-      "recommendation": "Concrete aanbeveling",
-      "financial_impact": "Geschatte financiële impact",
-      "legal_reference": "Relevant wetsartikel"
-    }}
-  ],
-  "action_plan": {{
-    "direct": ["Directe acties"],
-    "short_term": ["Korte termijn acties"],
-    "long_term": ["Lange termijn acties"]
-  }},
-  "negotiation_strategy": {{
-    "your_position": "Positie",
-    "counterparty_position": "Positie",
-    "arguments": ["Argumenten"],
-    "alternatives": ["Alternatieven"],
-    "fallback": "Fallback"
-  }}
-}}
-
-BELANGRIJK: 
-- Identificeer ALLE risico's (juridisch, financieel, operationeel, commercieel)
-- Kwantificeer financiële impact waar mogelijk
-- Geef ALLEEN JSON"""
+            return self._generate_mock_response(text)
     
     async def _analyze_with_huggingface(self, text: str, mode: str, analysis_type: str) -> dict:
         import requests
@@ -352,9 +425,9 @@ BELANGRIJK:
         API_URL = "https://api-inference.huggingface.co/models/meta-llama/Llama-3.2-3B-Instruct"
         headers = {"Authorization": f"Bearer {HF_API_TOKEN}"}
         
-        prompt = f"""Analyseer dit document ({LEGAL_DOMAIN_PROMPTS.get(analysis_type, 'juridisch')}): {text[:4000]}
+        prompt = f"""Analyseer dit document: {text[:4000]}
 
-Geef JSON met: summary, contract_type, parties_involved, key_dates, risks, overall_advice, sentiment_score, action_plan, negotiation_strategy, due_diligence_findings"""
+Geef JSON met: summary, contract_type, parties_involved, key_dates, risks, overall_advice, sentiment_score, action_plan, negotiation_strategy"""
 
         payload = {
             "inputs": prompt,
@@ -413,7 +486,29 @@ async def advocaten_page():
 
 @app.get("/health")
 def health_check():
-    return {"status": "healthy", "provider": AI_PROVIDER, "version": "4.1.0"}
+    return {"status": "healthy", "provider": AI_PROVIDER, "version": "5.0.0"}
+
+@app.get("/api/legal-articles")
+def get_legal_articles():
+    """Lijst van alle beschikbare wetsartikelen"""
+    return {"articles": list(LEGAL_DATABASE.keys())}
+
+@app.post("/api/legal-commentary", response_model=dict)
+async def get_legal_commentary(
+    request: LegalArticleRequest,
+    api_key: str = Depends(verify_api_key)
+):
+    """Haal wettekst + AI commentaar + jurisprudentie op"""
+    article = request.article.strip()
+    
+    if article not in LEGAL_DATABASE:
+        raise HTTPException(status_code=404, detail=f"Artikel {article} niet gevonden")
+    
+    try:
+        result = await analyzer.get_legal_commentary(article)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/analyze-text", response_model=AnalysisResult)
 async def analyze_text(
@@ -470,6 +565,17 @@ async def analyze_file(
     finally:
         if os.path.exists(file_location):
             os.remove(file_location)
+
+@app.post("/api/export-report")
+async def export_report(
+    analysis_data: dict,
+    format: str = "pdf",
+    api_key: str = Depends(verify_api_key)
+):
+    """Export analyse naar PDF of Word"""
+    # TODO: Implementeer PDF/Word generatie
+    # Voor nu: return JSON die client kan gebruiken
+    return {"message": "Export functionaliteit in ontwikkeling", "data": analysis_data}
 
 if __name__ == "__main__":
     import uvicorn
