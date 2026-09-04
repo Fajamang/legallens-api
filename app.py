@@ -15,7 +15,7 @@ load_dotenv()
 app = FastAPI(
     title="LegalLens Intelligence API",
     description="AI-powered legal analysis for professionals",
-    version="4.0.0"
+    version="4.1.0"
 )
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -36,10 +36,10 @@ class RiskItem(BaseModel):
     description: str
     recommendation: str
     clause_quote: str = ""
-    legal_reference: str = ""  # NIEUW: wetsartikel
+    legal_reference: str = ""
 
 class DueDiligenceFinding(BaseModel):
-    category: str  # Juridisch, Financieel, Operationeel, Commercieel
+    category: str
     severity: str
     title: str
     description: str
@@ -56,7 +56,6 @@ class AnalysisResult(BaseModel):
     risks: List[RiskItem]
     overall_advice: str
     sentiment_score: float
-    # NIEUW: Advocaat features
     action_plan: dict = {}
     negotiation_strategy: dict = {}
     due_diligence_findings: List[DueDiligenceFinding] = []
@@ -65,9 +64,24 @@ class AnalysisResult(BaseModel):
 class TextAnalysisRequest(BaseModel):
     text: str
     mode: Literal["standard", "advocaat"] = "standard"
-    analysis_type: Literal["contract", "due_diligence", "both"] = "contract"
+    analysis_type: str = "contract"
 
-# --- PROFESSIONELE AI ANALYZER ---
+# --- Rechtsgebied-specifieke prompts ---
+LEGAL_DOMAIN_PROMPTS = {
+    "contract": "algemene contractanalyse",
+    "due_diligence": "due diligence onderzoek",
+    "huurrecht": "huurrecht (boek 7 BW)",
+    "arbeidsrecht": "arbeidsrecht (boek 7 BW titel 10)",
+    "familierecht": "familierecht (boek 1 BW)",
+    "ondernemingsrecht": "ondernemingsrecht en M&A (boek 2 BW)",
+    "bestuursrecht": "bestuursrecht (Awb)",
+    "strafrecht": "strafrecht (Sr en Sv)",
+    "aansprakelijkheid": "aansprakelijkheidsrecht (boek 6 BW)",
+    "ip": "intellectueel eigendom (Auteurswet, Merkenwet, Octrooiwet)",
+    "compliance": "compliance en regelgeving",
+    "both": "volledige analyse met due diligence"
+}
+
 class AIAnalyzer:
     def __init__(self):
         self.provider = AI_PROVIDER
@@ -81,25 +95,25 @@ class AIAnalyzer:
             return self._generate_mock_response(text)
     
     async def _analyze_with_openai(self, text: str, mode: str, analysis_type: str) -> dict:
-        """Echte AI analyse met OpenAI"""
         import requests
         
-        # System prompt verschilt per mode
+        domain_desc = LEGAL_DOMAIN_PROMPTS.get(analysis_type, "algemene juridische analyse")
+        
         if mode == "advocaat":
-            system_prompt = """Je bent een ervaren Nederlandse advocaat met 20 jaar praktijkervaring.
+            system_prompt = f"""Je bent een ervaren Nederlandse advocaat met 20 jaar praktijkervaring gespecialiseerd in {domain_desc}.
 Je analyseert documenten grondig, citeert specifieke wetsartikelen en jurisprudentie,
 en geeft strategisch advies op professioneel niveau.
 
 BELANGRIJKE REGELS:
 1. Geef ALLEEN een JSON response, geen andere tekst
 2. Gebruik juridisch Nederlands en Latijnse termen waar passend
-3. Citeer SPECIFIEKE wetsartikelen (BW, Sr, etc.)
+3. Citeer SPECIFIEKE wetsartikelen (BW, Sr, Awb, etc.)
 4. Verwijs naar relevante jurisprudentie (ECLI nummers)
 5. Geef concrete processtrategieën
 6. Kwantificeer financiële impact waar mogelijk
 7. Wees kritisch en signaleer ALLE risico's"""
         else:
-            system_prompt = """Je bent een ervaren Nederlandse jurist gespecialiseerd in contractanalyse.
+            system_prompt = f"""Je bent een ervaren Nederlandse jurist gespecialiseerd in {domain_desc}.
 Je analyseert documenten grondig en geeft concrete, bruikbare adviezen.
 
 BELANGRIJKE REGELS:
@@ -109,13 +123,7 @@ BELANGRIJKE REGELS:
 4. Geef bij elk risico een citaat uit het document
 5. Wees specifiek in je adviezen"""
 
-        # User prompt verschilt per analysis_type
-        if analysis_type == "due_diligence":
-            user_prompt = self._build_due_diligence_prompt(text)
-        elif analysis_type == "both":
-            user_prompt = self._build_combined_prompt(text)
-        else:
-            user_prompt = self._build_contract_prompt(text)
+        user_prompt = self._build_prompt(text, analysis_type)
 
         headers = {
             "Authorization": f"Bearer {OPENAI_API_KEY}",
@@ -146,7 +154,6 @@ BELANGRIJKE REGELS:
             content = result["choices"][0]["message"]["content"]
             parsed = json.loads(content)
             
-            # Voeg tijd besparing toe
             word_count = len(text.split())
             parsed["time_saved_hours"] = round(word_count / 500 * 0.5, 1)
             
@@ -156,18 +163,103 @@ BELANGRIJKE REGELS:
             print(f"OpenAI error: {e}")
             return await self._analyze_with_huggingface(text, mode, analysis_type)
     
-    def _build_contract_prompt(self, text: str) -> str:
-        return f"""Analyseer het volgende juridische document grondig:
+    def _build_prompt(self, text: str, analysis_type: str) -> str:
+        if analysis_type == "due_diligence" or analysis_type == "both":
+            return self._build_due_diligence_prompt(text)
+        else:
+            return self._build_domain_prompt(text, analysis_type)
+    
+    def _build_domain_prompt(self, text: str, analysis_type: str) -> str:
+        domain_desc = LEGAL_DOMAIN_PROMPTS.get(analysis_type, "juridische analyse")
+        
+        domain_specific_instructions = {
+            "huurrecht": """
+Specifieke aandachtspunten huurrecht:
+- Huurbescherming (boek 7 BW)
+- Huurprijs en indexatie
+- Onderhoudsverplichtingen (art. 7:206 BW)
+- Opzegtermijnen en ontbinding
+- Huurdersbescherming bij verkoop""",
+            "arbeidsrecht": """
+Specifieke aandachtspunten arbeidsrecht:
+- Ontslagrecht en transitievergoeding (art. 7:673 BW)
+- Concurrentiebeding (art. 7:653 BW)
+- Proeftijd (art. 7:652 BW)
+- CAO bepalingen
+- Werknemersbescherming""",
+            "familierecht": """
+Specifieke aandachtspunten familierecht:
+- Huwelijkse voorwaarden (art. 1:100 BW)
+- Gemeenschap van goederen (art. 1:94 BW)
+- Ouderlijk gezag (art. 1:247 BW)
+- Partneralimentatie (art. 1:157 BW)
+- Kinderalimentatie (Tremanormen)
+- Zorgkorting""",
+            "ondernemingsrecht": """
+Specifieke aandachtspunten ondernemingsrecht:
+- Aandeelhoudersovereenkomst
+- Bestuurdersaansprakelijkheid (art. 2:9 BW)
+- Fusie en overname procedures
+- Due diligence verplichtingen
+- Mededingingsrecht""",
+            "bestuursrecht": """
+Specifieke aandachtspunten bestuursrecht:
+- Algemene wet bestuursrecht (Awb)
+- Bezwaar en beroep procedures
+- Vergunningen en ontheffingen
+- Beginselen van behoorlijk bestuur
+- Termijnen en rechtsmiddelen""",
+            "strafrecht": """
+Specifieke aandachtspunten strafrecht:
+- Strafbaarstelling (Sr)
+- Bewijsrecht (Sv)
+- Strafmaat en strafsoorten
+- Verjaringstermijnen
+- Rechten van verdachte""",
+            "aansprakelijkheid": """
+Specifieke aandachtspunten aansprakelijkheid:
+- Onrechtmatige daad (art. 6:162 BW)
+- Toerekenbaarheid en causaliteit
+- Schadevergoeding (art. 6:95 BW)
+- Eigen schuld (art. 6:101 BW)
+- Verjaring (art. 3:310 BW)""",
+            "ip": """
+Specifieke aandachtspunten IP:
+- Auteurswet bescherming
+- Merkenrecht en inschrijving
+- Octrooien en innovatie
+- Handelsgeheimen
+- Licentieovereenkomsten""",
+            "compliance": """
+Specifieke aandachtspunten compliance:
+- AVG/GDPR compliance
+- Anti-witwas wetgeving
+- Sanctieregelingen
+- Interne procedures
+- Meldplichten""",
+            "contract": """
+Specifieke aandachtspunten contracten:
+- Algemene voorwaarden
+- Ontbinding en vernietiging
+- Nakoming en tekortkoming
+- Overmacht (art. 6:75 BW)
+- Geschillenregeling"""
+        }
+        
+        specific = domain_specific_instructions.get(analysis_type, "")
+        
+        return f"""Analyseer het volgende juridische document ({domain_desc}):
 
 === DOCUMENT ===
 {text[:8000]}
 === EINDE DOCUMENT ===
+{specific}
 
 Geef een JSON response met deze EXACTE structuur:
 
 {{
   "summary": "Gedetailleerde samenvatting van 3-5 zinnen",
-  "contract_type": "Type contract",
+  "contract_type": "Type document",
   "parties_involved": ["Volledige naam partij 1", "Volledige naam partij 2"],
   "key_dates": {{"start_date": "YYYY-MM-DD", "end_date": "YYYY-MM-DD"}},
   "risks": [
@@ -177,7 +269,7 @@ Geef een JSON response met deze EXACTE structuur:
       "description": "Specifieke beschrijving",
       "recommendation": "Concreet advies",
       "clause_quote": "Letterlijk citaat",
-      "legal_reference": "Relevant wetsartikel (bijv: Art. 6:94 BW)"
+      "legal_reference": "Relevant wetsartikel"
     }}
   ],
   "overall_advice": "Algemeen advies in 2-3 zinnen",
@@ -231,7 +323,7 @@ Geef een JSON response met deze EXACTE structuur:
       "title": "Korte titel",
       "description": "Gedetailleerde beschrijving",
       "recommendation": "Concrete aanbeveling",
-      "financial_impact": "Geschatte financiële impact (bijv: €50.000)",
+      "financial_impact": "Geschatte financiële impact",
       "legal_reference": "Relevant wetsartikel"
     }}
   ],
@@ -253,20 +345,16 @@ BELANGRIJK:
 - Identificeer ALLE risico's (juridisch, financieel, operationeel, commercieel)
 - Kwantificeer financiële impact waar mogelijk
 - Geef ALLEEN JSON"""
-
-    def _build_combined_prompt(self, text: str) -> str:
-        return self._build_due_diligence_prompt(text)
     
     async def _analyze_with_huggingface(self, text: str, mode: str, analysis_type: str) -> dict:
-        """Fallback met HuggingFace"""
         import requests
         
         API_URL = "https://api-inference.huggingface.co/models/meta-llama/Llama-3.2-3B-Instruct"
         headers = {"Authorization": f"Bearer {HF_API_TOKEN}"}
         
-        prompt = f"""Analyseer dit document: {text[:4000]}
+        prompt = f"""Analyseer dit document ({LEGAL_DOMAIN_PROMPTS.get(analysis_type, 'juridisch')}): {text[:4000]}
 
-Geef JSON met: summary, contract_type, parties_involved, key_dates, risks (met clause_type, severity, description, recommendation, clause_quote, legal_reference), overall_advice, sentiment_score, action_plan (met direct, short_term, long_term arrays), negotiation_strategy (met your_position, counterparty_position, arguments, alternatives, fallback), due_diligence_findings (array met category, severity, title, description, recommendation, financial_impact, legal_reference)"""
+Geef JSON met: summary, contract_type, parties_involved, key_dates, risks, overall_advice, sentiment_score, action_plan, negotiation_strategy, due_diligence_findings"""
 
         payload = {
             "inputs": prompt,
@@ -325,7 +413,7 @@ async def advocaten_page():
 
 @app.get("/health")
 def health_check():
-    return {"status": "healthy", "provider": AI_PROVIDER, "version": "4.0.0"}
+    return {"status": "healthy", "provider": AI_PROVIDER, "version": "4.1.0"}
 
 @app.post("/api/analyze-text", response_model=AnalysisResult)
 async def analyze_text(
