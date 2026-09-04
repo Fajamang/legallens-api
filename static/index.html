@@ -19,6 +19,7 @@
             border-radius: 16px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             overflow: hidden;
+            position: relative;
         }
         .header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -30,7 +31,6 @@
         .header p { opacity: 0.9; font-size: 1.1em; }
         .content { padding: 40px; }
         
-        /* ✅ NIEUW: Mode selector met beide knoppen blauw */
         .mode-selector {
             display: flex;
             gap: 10px;
@@ -190,6 +190,12 @@
             font-size: 0.9em;
             margin: 8px 0;
             border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .legal-ref:hover {
+            background: #d0e8ff;
+            transform: translateX(5px);
         }
         .advice-box {
             background: white;
@@ -303,6 +309,190 @@
             display: none;
         }
         .error.active { display: block; }
+        
+        /* ✅ NIEUW: Sidebar Panel */
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+        .sidebar-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .sidebar {
+            position: fixed;
+            top: 0;
+            right: -600px;
+            width: 600px;
+            max-width: 100%;
+            height: 100vh;
+            background: white;
+            box-shadow: -5px 0 20px rgba(0,0,0,0.2);
+            z-index: 1000;
+            transition: right 0.3s ease;
+            overflow-y: auto;
+        }
+        .sidebar.active {
+            right: 0;
+        }
+        .sidebar-header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 30px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .sidebar-header h2 {
+            font-size: 1.8em;
+            margin-bottom: 10px;
+        }
+        .sidebar-header .subtitle {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        .sidebar-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.5em;
+            transition: all 0.3s;
+        }
+        .sidebar-close:hover {
+            background: rgba(255,255,255,0.3);
+            transform: rotate(90deg);
+        }
+        .sidebar-content {
+            padding: 30px;
+        }
+        .sidebar-section {
+            margin-bottom: 30px;
+        }
+        .sidebar-section h3 {
+            color: #1e3c72;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 10px;
+        }
+        .sidebar-section .text-content {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            line-height: 1.6;
+            font-size: 1.05em;
+        }
+        .sidebar-section .commentary {
+            background: #fff9e6;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #ffc107;
+            line-height: 1.6;
+        }
+        .sidebar-section .related-articles {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .sidebar-section .related-article-btn {
+            background: #667eea;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s;
+        }
+        .sidebar-section .related-article-btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+        .sidebar-section .history-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 3px solid #667eea;
+        }
+        .sidebar-section .history-item .year {
+            font-weight: 600;
+            color: #667eea;
+        }
+        .sidebar-section .jurisprudence-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 3px solid #2196F3;
+        }
+        .sidebar-section .jurisprudence-item .ecli {
+            font-weight: 600;
+            color: #2196F3;
+            font-size: 0.9em;
+        }
+        .sidebar-section .jurisprudence-item .court {
+            color: #666;
+            font-size: 0.9em;
+        }
+        .sidebar-section .jurisprudence-item .summary {
+            margin-top: 8px;
+            line-height: 1.5;
+        }
+        .sidebar-section .relevance-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+        .relevance-hoog { background: #51cf66; color: white; }
+        .relevance-gemiddeld { background: #ffd43b; color: #333; }
+        .relevance-laag { background: #e0e0e0; color: #666; }
+        
+        .export-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .export-btn {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .export-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                right: -100%;
+            }
+        }
     </style>
 </head>
 <body>
@@ -313,7 +503,6 @@
         </div>
         
         <div class="content">
-            <!-- ✅ NIEUW: Beide knoppen nu blauw met witte tekst -->
             <div class="mode-selector">
                 <button class="mode-btn active" onclick="setMode('standard', this)">📄 Standaard</button>
                 <button class="mode-btn" onclick="setMode('advocaat', this)">⚖️ Advocaat Mode</button>
@@ -332,15 +521,15 @@
                 <div class="form-group">
                     <label>Analyse type:</label>
                     <select id="analysis-type">
-                        <option value="contract"> Contract Analyse (Algemeen)</option>
-                        <option value="due_diligence">🔍 Due Diligence</option>
+                        <option value="contract">📋 Contract Analyse (Algemeen)</option>
+                        <option value="due_diligence"> Due Diligence</option>
                         <option value="huurrecht">🏠 Huurrecht</option>
                         <option value="arbeidsrecht">💼 Arbeidsrecht</option>
-                        <option value="familierecht">👨‍👩‍👧 Familierecht</option>
+                        <option value="familierecht">👨👩‍👧 Familierecht</option>
                         <option value="ondernemingsrecht">🏢 Ondernemingsrecht / M&A</option>
-                        <option value="bestuursrecht">️ Bestuursrecht</option>
+                        <option value="bestuursrecht">🏛️ Bestuursrecht</option>
                         <option value="strafrecht">️ Strafrecht</option>
-                        <option value="aansprakelijkheid">️ Aansprakelijkheid</option>
+                        <option value="aansprakelijkheid">🛡️ Aansprakelijkheid</option>
                         <option value="ip">💡 Intellectueel Eigendom</option>
                         <option value="compliance">✅ Compliance Check</option>
                         <option value="both">📊 Volledige Analyse (Contract + Due Diligence)</option>
@@ -359,14 +548,14 @@
                     <select id="file-analysis-type">
                         <option value="contract">📋 Contract Analyse (Algemeen)</option>
                         <option value="due_diligence">🔍 Due Diligence</option>
-                        <option value="huurrecht"> Huurrecht</option>
+                        <option value="huurrecht">🏠 Huurrecht</option>
                         <option value="arbeidsrecht">💼 Arbeidsrecht</option>
-                        <option value="familierecht">👨‍👩‍ Familierecht</option>
+                        <option value="familierecht">👨‍👩‍👧 Familierecht</option>
                         <option value="ondernemingsrecht">🏢 Ondernemingsrecht / M&A</option>
-                        <option value="bestuursrecht">🏛️ Bestuursrecht</option>
+                        <option value="bestuursrecht">️ Bestuursrecht</option>
                         <option value="strafrecht">⚖️ Strafrecht</option>
                         <option value="aansprakelijkheid">🛡️ Aansprakelijkheid</option>
-                        <option value="ip">💡 Intellectueel Eigendom</option>
+                        <option value="ip"> Intellectueel Eigendom</option>
                         <option value="compliance">✅ Compliance Check</option>
                         <option value="both">📊 Volledige Analyse (Contract + Due Diligence)</option>
                     </select>
@@ -385,14 +574,32 @@
                 <div class="result-inner">
                     <h3>📊 Analyse Resultaat</h3>
                     <div id="result-content"></div>
+                    <div class="export-buttons">
+                        <button class="export-btn" onclick="exportToPDF()">📄 Export PDF</button>
+                        <button class="export-btn" onclick="exportToWord()">📝 Export Word</button>
+                    </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- ✅ NIEUW: Sidebar Panel -->
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <button class="sidebar-close" onclick="closeSidebar()">×</button>
+            <h2 id="sidebar-title">📚 Wetsartikel</h2>
+            <div class="subtitle" id="sidebar-subtitle">Laden...</div>
+        </div>
+        <div class="sidebar-content" id="sidebar-content">
+            <!-- Content wordt dynamisch geladen -->
         </div>
     </div>
 
     <script>
         const API_BASE = window.location.origin;
         let currentMode = 'standard';
+        let currentAnalysis = null;
         
         function setMode(mode, btn) {
             currentMode = mode;
@@ -425,6 +632,105 @@
             document.getElementById('error').classList.remove('active');
         }
         
+        // ✅ NIEUW: Sidebar functies
+        function openSidebar(article) {
+            document.getElementById('sidebar-overlay').classList.add('active');
+            document.getElementById('sidebar').classList.add('active');
+            loadLegalCommentary(article);
+        }
+        
+        function closeSidebar() {
+            document.getElementById('sidebar-overlay').classList.remove('active');
+            document.getElementById('sidebar').classList.remove('active');
+        }
+        
+        async function loadLegalCommentary(article) {
+            const content = document.getElementById('sidebar-content');
+            const title = document.getElementById('sidebar-title');
+            const subtitle = document.getElementById('sidebar-subtitle');
+            
+            title.textContent = '📚 Laden...';
+            subtitle.textContent = 'Even geduld';
+            content.innerHTML = '<div class="loading active"><div class="spinner"></div></div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/legal-commentary`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ article: article })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Artikel niet gevonden');
+                }
+                
+                const data = await response.json();
+                
+                title.textContent = `⚖️ ${data.article}`;
+                subtitle.textContent = data.title;
+                
+                let html = `
+                    <div class="sidebar-section">
+                        <h3>📜 Wettekst</h3>
+                        <div class="text-content">${data.text}</div>
+                    </div>
+                    
+                    <div class="sidebar-section">
+                        <h3>💡 AI Juridisch Commentaar</h3>
+                        <div class="commentary">${data.commentary}</div>
+                    </div>
+                `;
+                
+                if (data.related && data.related.length > 0) {
+                    html += `
+                        <div class="sidebar-section">
+                            <h3> Gerelateerde Artikelen</h3>
+                            <div class="related-articles">
+                                ${data.related.map(art => `
+                                    <button class="related-article-btn" onclick="openSidebar('${art}')">${art}</button>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                if (data.history && data.history.length > 0) {
+                    html += `
+                        <div class="sidebar-section">
+                            <h3> Wijzigingsgeschiedenis</h3>
+                            ${data.history.map(h => `
+                                <div class="history-item">
+                                    <div class="year">${h.year}</div>
+                                    <div>${h.change}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                }
+                
+                if (data.jurisprudence && data.jurisprudence.length > 0) {
+                    html += `
+                        <div class="sidebar-section">
+                            <h3>⚖️ Relevante Jurisprudentie</h3>
+                            ${data.jurisprudence.map(j => `
+                                <div class="jurisprudence-item">
+                                    <div class="ecli">${j.ecli}</div>
+                                    <div class="court">${j.court} - ${j.date}</div>
+                                    <div class="summary">${j.summary}</div>
+                                    <span class="relevance-badge relevance-${j.relevance}">${j.relevance} relevantie</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                }
+                
+                content.innerHTML = html;
+                
+            } catch (error) {
+                content.innerHTML = `<div class="error active">⚠️ ${error.message}</div>`;
+            }
+        }
+        
         async function analyzeText() {
             const text = document.getElementById('text-input').value.trim();
             const analysisType = document.getElementById('analysis-type').value;
@@ -447,6 +753,7 @@
                 }
                 
                 const result = await response.json();
+                currentAnalysis = result;
                 displayResult(result);
             } catch (error) {
                 showError(error.message);
@@ -481,6 +788,7 @@
                 }
                 
                 const result = await response.json();
+                currentAnalysis = result;
                 displayResult(result);
             } catch (error) {
                 showError(error.message);
@@ -494,7 +802,7 @@
             const sentimentColor = result.sentiment_score > 0.7 ? '#51cf66' : 
                                   result.sentiment_score > 0.4 ? '#ffd43b' : '#ff6b6b';
             const sentimentText = result.sentiment_score > 0.7 ? '✅ Gunstig' : 
-                                 result.sentiment_score > 0.4 ? '️ Gemengd' : '❌ Ongunstig';
+                                 result.sentiment_score > 0.4 ? '⚠️ Gemengd' : ' Ongunstig';
             
             let html = '';
             
@@ -504,7 +812,7 @@
             
             html += `
                 <div class="result-section">
-                    <h4> Type Document</h4>
+                    <h4>📋 Type Document</h4>
                     <div class="contract-type">${result.contract_type || 'Onbekend'}</div>
                 </div>
                 
@@ -536,7 +844,7 @@
                                 <span class="severity-badge severity-${f.severity.toLowerCase()}">${f.severity}</span>
                                 <h5>${f.title}</h5>
                                 <p><strong>Beschrijving:</strong> ${f.description}</p>
-                                ${f.legal_reference ? `<div class="legal-ref">⚖️ ${f.legal_reference}</div>` : ''}
+                                ${f.legal_reference ? `<div class="legal-ref" onclick="openSidebar('${f.legal_reference}')">⚖️ ${f.legal_reference} (klik voor details)</div>` : ''}
                                 <p><strong>Aanbeveling:</strong> ${f.recommendation}</p>
                                 ${f.financial_impact ? `<div class="financial-impact">💰 Financiële impact: ${f.financial_impact}</div>` : ''}
                             </div>
@@ -547,7 +855,7 @@
             
             html += `
                 <div class="result-section">
-                    <h4>⚠️ Risico's (${result.risks.length})</h4>
+                    <h4>️ Risico's (${result.risks.length})</h4>
                     ${result.risks.length === 0 ? '<p style="color: #51cf66; font-weight: 600;">✅ Geen risico\'s gedetecteerd</p>' : ''}
                     ${result.risks.map(r => `
                         <div class="risk-item">
@@ -555,7 +863,7 @@
                             <h5>${r.clause_type}</h5>
                             <p><strong>📋 Beschrijving:</strong> ${r.description}</p>
                             ${r.clause_quote ? `<div class="clause-quote"><strong>💬 Citaat:</strong><br>"${r.clause_quote}"</div>` : ''}
-                            ${r.legal_reference ? `<div class="legal-ref">⚖️ ${r.legal_reference}</div>` : ''}
+                            ${r.legal_reference ? `<div class="legal-ref" onclick="openSidebar('${r.legal_reference}')">⚖️ ${r.legal_reference} (klik voor details)</div>` : ''}
                             <p><strong>💡 Advies:</strong> ${r.recommendation}</p>
                         </div>
                     `).join('')}
@@ -644,6 +952,24 @@
             setTimeout(() => {
                 document.getElementById('result').classList.add('active');
             }, 100);
+        }
+        
+        function exportToPDF() {
+            if (!currentAnalysis) {
+                showError('Geen analyse beschikbaar om te exporteren');
+                return;
+            }
+            // TODO: Implementeer PDF export
+            alert('PDF export functionaliteit wordt ontwikkeld. Gebruik voor nu de browser print functie (Ctrl+P).');
+        }
+        
+        function exportToWord() {
+            if (!currentAnalysis) {
+                showError('Geen analyse beschikbaar om te exporteren');
+                return;
+            }
+            // TODO: Implementeer Word export
+            alert('Word export functionaliteit wordt ontwikkeld.');
         }
     </script>
 </body>
