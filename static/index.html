@@ -310,7 +310,6 @@
         }
         .error.active { display: block; }
         
-        /* ✅ NIEUW: Sidebar Panel */
         .sidebar-overlay {
             position: fixed;
             top: 0;
@@ -522,15 +521,15 @@
                     <label>Analyse type:</label>
                     <select id="analysis-type">
                         <option value="contract">📋 Contract Analyse (Algemeen)</option>
-                        <option value="due_diligence"> Due Diligence</option>
+                        <option value="due_diligence">🔍 Due Diligence</option>
                         <option value="huurrecht">🏠 Huurrecht</option>
                         <option value="arbeidsrecht">💼 Arbeidsrecht</option>
-                        <option value="familierecht">👨👩‍👧 Familierecht</option>
+                        <option value="familierecht">👨‍👩‍👧 Familierecht</option>
                         <option value="ondernemingsrecht">🏢 Ondernemingsrecht / M&A</option>
-                        <option value="bestuursrecht">🏛️ Bestuursrecht</option>
-                        <option value="strafrecht">️ Strafrecht</option>
+                        <option value="bestuursrecht">️ Bestuursrecht</option>
+                        <option value="strafrecht">⚖️ Strafrecht</option>
                         <option value="aansprakelijkheid">🛡️ Aansprakelijkheid</option>
-                        <option value="ip">💡 Intellectueel Eigendom</option>
+                        <option value="ip"> Intellectueel Eigendom</option>
                         <option value="compliance">✅ Compliance Check</option>
                         <option value="both">📊 Volledige Analyse (Contract + Due Diligence)</option>
                     </select>
@@ -548,14 +547,14 @@
                     <select id="file-analysis-type">
                         <option value="contract">📋 Contract Analyse (Algemeen)</option>
                         <option value="due_diligence">🔍 Due Diligence</option>
-                        <option value="huurrecht">🏠 Huurrecht</option>
+                        <option value="huurrecht"> Huurrecht</option>
                         <option value="arbeidsrecht">💼 Arbeidsrecht</option>
-                        <option value="familierecht">👨‍👩‍👧 Familierecht</option>
+                        <option value="familierecht">👨‍👩‍ Familierecht</option>
                         <option value="ondernemingsrecht">🏢 Ondernemingsrecht / M&A</option>
-                        <option value="bestuursrecht">️ Bestuursrecht</option>
+                        <option value="bestuursrecht">🏛️ Bestuursrecht</option>
                         <option value="strafrecht">⚖️ Strafrecht</option>
                         <option value="aansprakelijkheid">🛡️ Aansprakelijkheid</option>
-                        <option value="ip"> Intellectueel Eigendom</option>
+                        <option value="ip">💡 Intellectueel Eigendom</option>
                         <option value="compliance">✅ Compliance Check</option>
                         <option value="both">📊 Volledige Analyse (Contract + Due Diligence)</option>
                     </select>
@@ -583,16 +582,14 @@
         </div>
     </div>
 
-    <!-- ✅ NIEUW: Sidebar Panel -->
     <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <button class="sidebar-close" onclick="closeSidebar()">×</button>
-            <h2 id="sidebar-title">📚 Wetsartikel</h2>
+            <h2 id="sidebar-title"> Wetsartikel</h2>
             <div class="subtitle" id="sidebar-subtitle">Laden...</div>
         </div>
         <div class="sidebar-content" id="sidebar-content">
-            <!-- Content wordt dynamisch geladen -->
         </div>
     </div>
 
@@ -632,11 +629,26 @@
             document.getElementById('error').classList.remove('active');
         }
         
-        // ✅ NIEUW: Sidebar functies
-        function openSidebar(article) {
+        async function openSidebar(article) {
+            // Slimme normalisatie
+            let normalizedArticle = article
+                .replace(/Art\.\s*/gi, '')
+                .replace(/Artikel\s*/gi, '')
+                .replace(/artikel\s*/gi, '')
+                .replace(/\s+/g, ' ')
+                .trim();
+            
+            if (!normalizedArticle.toUpperCase().includes('BW') && 
+                !normalizedArticle.toUpperCase().includes('SR') &&
+                !normalizedArticle.toUpperCase().includes('AWB')) {
+                normalizedArticle += ' BW';
+            }
+            
+            console.log('Opening sidebar for article:', normalizedArticle);
+            
             document.getElementById('sidebar-overlay').classList.add('active');
             document.getElementById('sidebar').classList.add('active');
-            loadLegalCommentary(article);
+            loadLegalCommentary(normalizedArticle);
         }
         
         function closeSidebar() {
@@ -684,7 +696,7 @@
                 if (data.related && data.related.length > 0) {
                     html += `
                         <div class="sidebar-section">
-                            <h3> Gerelateerde Artikelen</h3>
+                            <h3>🔗 Gerelateerde Artikelen</h3>
                             <div class="related-articles">
                                 ${data.related.map(art => `
                                     <button class="related-article-btn" onclick="openSidebar('${art}')">${art}</button>
@@ -697,7 +709,7 @@
                 if (data.history && data.history.length > 0) {
                     html += `
                         <div class="sidebar-section">
-                            <h3> Wijzigingsgeschiedenis</h3>
+                            <h3>📅 Wijzigingsgeschiedenis</h3>
                             ${data.history.map(h => `
                                 <div class="history-item">
                                     <div class="year">${h.year}</div>
@@ -802,7 +814,7 @@
             const sentimentColor = result.sentiment_score > 0.7 ? '#51cf66' : 
                                   result.sentiment_score > 0.4 ? '#ffd43b' : '#ff6b6b';
             const sentimentText = result.sentiment_score > 0.7 ? '✅ Gunstig' : 
-                                 result.sentiment_score > 0.4 ? '⚠️ Gemengd' : ' Ongunstig';
+                                 result.sentiment_score > 0.4 ? '⚠️ Gemengd' : '❌ Ongunstig';
             
             let html = '';
             
@@ -822,7 +834,7 @@
                 </div>
                 
                 <div class="result-section">
-                    <h4> Betrokken Partijen</h4>
+                    <h4>👥 Betrokken Partijen</h4>
                     <ul>${result.parties_involved.map(p => `<li>👤 ${p}</li>`).join('')}</ul>
                 </div>
                 
@@ -844,7 +856,7 @@
                                 <span class="severity-badge severity-${f.severity.toLowerCase()}">${f.severity}</span>
                                 <h5>${f.title}</h5>
                                 <p><strong>Beschrijving:</strong> ${f.description}</p>
-                                ${f.legal_reference ? `<div class="legal-ref" onclick="openSidebar('${f.legal_reference}')">⚖️ ${f.legal_reference} (klik voor details)</div>` : ''}
+                                ${f.legal_reference ? `<div class="legal-ref" onclick="openSidebar('${f.legal_reference}')">️ ${f.legal_reference} (klik voor details)</div>` : ''}
                                 <p><strong>Aanbeveling:</strong> ${f.recommendation}</p>
                                 ${f.financial_impact ? `<div class="financial-impact">💰 Financiële impact: ${f.financial_impact}</div>` : ''}
                             </div>
@@ -855,7 +867,7 @@
             
             html += `
                 <div class="result-section">
-                    <h4>️ Risico's (${result.risks.length})</h4>
+                    <h4>⚠️ Risico's (${result.risks.length})</h4>
                     ${result.risks.length === 0 ? '<p style="color: #51cf66; font-weight: 600;">✅ Geen risico\'s gedetecteerd</p>' : ''}
                     ${result.risks.map(r => `
                         <div class="risk-item">
@@ -959,7 +971,6 @@
                 showError('Geen analyse beschikbaar om te exporteren');
                 return;
             }
-            // TODO: Implementeer PDF export
             alert('PDF export functionaliteit wordt ontwikkeld. Gebruik voor nu de browser print functie (Ctrl+P).');
         }
         
@@ -968,7 +979,6 @@
                 showError('Geen analyse beschikbaar om te exporteren');
                 return;
             }
-            // TODO: Implementeer Word export
             alert('Word export functionaliteit wordt ontwikkeld.');
         }
     </script>
