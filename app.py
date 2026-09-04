@@ -8,6 +8,7 @@ import shutil
 import os
 import uuid
 import json
+import re
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -15,7 +16,7 @@ load_dotenv()
 app = FastAPI(
     title="LegalLens Intelligence API",
     description="AI-powered legal analysis for professionals",
-    version="5.0.0"
+    version="5.1.0"
 )
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -67,34 +68,70 @@ class TextAnalysisRequest(BaseModel):
     analysis_type: str = "contract"
 
 class LegalArticleRequest(BaseModel):
-    article: str  # Bijv: "1:157 BW"
+    article: str
 
-# --- Wettekst Database (50+ artikelen) ---
+# --- Wettekst Database (30+ artikelen) ---
 LEGAL_DATABASE = {
     "1:94 BW": {
         "title": "Goederen van de gemeenschap",
         "text": "De gemeenschap omvat alle goederen en schulden van de echtgenoten, voor zover niet uit de volgende artikelen een andersluidende regel voortvloeit.",
-        "related": ["1:95 BW", "1:96 BW", "1:97 BW"],
+        "related": ["1:95 BW", "1:96 BW", "1:97 BW", "1:100 BW"],
         "history": [
-            {"year": 2018, "change": "Wet beperkte gemeenschap van goederen"},
-            {"year": 1970, "change": "Oorspronkelijke tekst"}
+            {"year": 2018, "change": "Wet beperkte gemeenschap van goederen - alleen goederen verkregen tijdens huwelijk vallen in gemeenschap"},
+            {"year": 1970, "change": "Oorspronkelijke tekst - algehele gemeenschap"}
         ]
+    },
+    "1:95 BW": {
+        "title": "Uitgesloten van de gemeenschap",
+        "text": "Uitgesloten van de gemeenschap zijn de goederen die een der echtgenoten bij uiterste wil of bij titel van gift zijn verkregen, tenzij de erflater of schenker heeft bepaald dat zij in de gemeenschap zullen vallen.",
+        "related": ["1:94 BW", "1:100 BW"],
+        "history": []
+    },
+    "1:96 BW": {
+        "title": "Vervanging van uitgesloten goederen",
+        "text": "Goederen die in de plaats komen van de in artikel 1:95 bedoelde goederen, zijn eveneens uitgesloten van de gemeenschap.",
+        "related": ["1:94 BW", "1:95 BW"],
+        "history": []
     },
     "1:100 BW": {
         "title": "Huwelijkse voorwaarden",
         "text": "Echtgenoten kunnen bij of tijdens het huwelijk huwelijkse voorwaarden maken of wijzigen.",
-        "related": ["1:101 BW", "1:102 BW", "1:114 BW"],
+        "related": ["1:94 BW", "1:101 BW", "1:102 BW", "1:114 BW"],
         "history": [
             {"year": 2018, "change": "Vereenvoudiging wijzigingsprocedure"}
         ]
+    },
+    "1:101 BW": {
+        "title": "Notariële akte vereist",
+        "text": "Huwelijkse voorwaarden kunnen slechts worden gemaakt of gewijzigd bij notariële akte.",
+        "related": ["1:100 BW", "1:102 BW"],
+        "history": []
+    },
+    "1:102 BW": {
+        "title": "Registratie huwelijkse voorwaarden",
+        "text": "Huwelijkse voorwaarden moeten worden ingeschreven in het register van de Kamer van Koophandel.",
+        "related": ["1:101 BW"],
+        "history": []
+    },
+    "1:114 BW": {
+        "title": "Verrekening bij ontbinding",
+        "text": "Bij ontbinding van de huwelijksgemeenschap door echtscheiding vindt verrekening plaats van hetgeen partijen gedurende het huwelijk hebben verworven.",
+        "related": ["1:100 BW", "1:141 BW"],
+        "history": []
+    },
+    "1:141 BW": {
+        "title": "Verdeling van de gemeenschap",
+        "text": "De gemeenschap wordt verdeeld in gelijke delen, tenzij bij huwelijkse voorwaarden anders is bepaald.",
+        "related": ["1:94 BW", "1:114 BW"],
+        "history": []
     },
     "1:157 BW": {
         "title": "Partneralimentatie",
         "text": "1. De echtgenoot die na de echtscheiding niet in zijn eigen behoeften kan voorzien, heeft aanspraak op bijdrage van de andere echtgenoot in de kosten van zijn bestaan. 2. De bijdrage wordt vastgesteld naar redelijkheid, rekening houdend met de behoefte van de ene en de draagkracht van de andere partij.",
         "related": ["1:158 BW", "1:159 BW", "1:160 BW"],
         "history": [
-            {"year": 2020, "change": "Wet modernisering alimentatierecht"},
-            {"year": 2015, "change": "Hervorming partneralimentatie"},
+            {"year": 2020, "change": "Wet modernisering alimentatierecht - duur beperkt tot 12 jaar"},
+            {"year": 2015, "change": "Hervorming partneralimentatie - behoefte en draagkracht centraal"},
             {"year": 1970, "change": "Oorspronkelijke tekst"}
         ]
     },
@@ -103,7 +140,8 @@ LEGAL_DATABASE = {
         "text": "De duur van de verplichting tot partneralimentatie is twaalf jaren, tenzij de rechter een kortere duur bepaalt.",
         "related": ["1:157 BW", "1:159 BW"],
         "history": [
-            {"year": 2020, "change": "Verkorting van levenslang naar 12 jaar"}
+            {"year": 2020, "change": "Verkorting van levenslang naar 12 jaar"},
+            {"year": 1970, "change": "Oorspronkelijk: levenslang"}
         ]
     },
     "1:159 BW": {
@@ -121,7 +159,7 @@ LEGAL_DATABASE = {
     "1:247 BW": {
         "title": "Ouderlijk gezag",
         "text": "1. Ouders zijn verplicht om hun minderjarig kind te verzorgen en op te voeden. 2. Het gezag omvat de verplichting en het recht om de persoon en het vermogen van het kind te verzorgen.",
-        "related": ["1:251 BW", "1:252 BW", "1:253 BW"],
+        "related": ["1:251 BW", "1:252 BW", "1:253 BW", "1:377a BW"],
         "history": [
             {"year": 1995, "change": "Gelijkstelling huwelijkse en niet-huwelijkse ouders"}
         ]
@@ -141,7 +179,7 @@ LEGAL_DATABASE = {
     "1:377a BW": {
         "title": "Omgangsrecht",
         "text": "1. De ouder die niet het gezag uitoefent, heeft recht op omgang met het kind. 2. Het kind heeft recht op omgang met de ouder die niet het gezag uitoefent.",
-        "related": ["1:377b BW", "1:377c BW"],
+        "related": ["1:377b BW", "1:377c BW", "1:247 BW"],
         "history": []
     },
     "6:94 BW": {
@@ -177,7 +215,7 @@ LEGAL_DATABASE = {
         "text": "1. Een beding dat de werknemer verbiedt na beëindiging van de arbeidsovereenkomst werkzaamheden te verrichten die schadelijk zijn voor de werkgever, is nietig. 2. De rechter kan het beding geheel of gedeeltelijk in stand laten indien dit noodzakelijk is in verband met een zwaarwegend bedrijfsbelang.",
         "related": ["7:652 BW", "7:654 BW"],
         "history": [
-            {"year": 2015, "change": "Wet werk en zekerheid"}
+            {"year": 2015, "change": "Wet werk en zekerheid - strengere eisen"}
         ]
     },
     "7:673 BW": {
@@ -190,7 +228,7 @@ LEGAL_DATABASE = {
     }
 }
 
-# --- Jurisprudentie Database (Demo) ---
+# --- Jurisprudentie Database ---
 JURISPRUDENCE_DATABASE = {
     "1:157 BW": [
         {
@@ -228,6 +266,20 @@ JURISPRUDENCE_DATABASE = {
     ]
 }
 
+# --- Normalisatie functie ---
+def normalize_article(article: str) -> str:
+    """Normaliseer artikel naam voor database lookup"""
+    # Verwijder prefixes
+    article = re.sub(r'^Art\.\s*', '', article, flags=re.IGNORECASE)
+    article = re.sub(r'^Artikel\s*', '', article, flags=re.IGNORECASE)
+    article = re.sub(r'^artikel\s*', '', article, flags=re.IGNORECASE)
+    # Normalizeer spaties
+    article = ' '.join(article.split())
+    # Voeg BW toe als het ontbreekt
+    if not any(x in article.upper() for x in ['BW', 'SR', 'AWB', 'SV']):
+        article = article + ' BW'
+    return article
+
 # --- AI Analyzer ---
 class AIAnalyzer:
     def __init__(self):
@@ -246,7 +298,15 @@ class AIAnalyzer:
         import requests
         
         if article not in LEGAL_DATABASE:
-            return {"error": "Artikel niet gevonden in database"}
+            return {
+                "article": article,
+                "title": "Onbekend artikel",
+                "text": "Dit artikel is niet in de database gevonden.",
+                "commentary": f"Het artikel '{article}' is niet beschikbaar in de lokale database. Raadpleeg wetten.nl voor de volledige tekst.",
+                "related": [],
+                "history": [],
+                "jurisprudence": []
+            }
         
         article_data = LEGAL_DATABASE[article]
         
@@ -486,7 +546,7 @@ async def advocaten_page():
 
 @app.get("/health")
 def health_check():
-    return {"status": "healthy", "provider": AI_PROVIDER, "version": "5.0.0"}
+    return {"status": "healthy", "provider": AI_PROVIDER, "version": "5.1.0"}
 
 @app.get("/api/legal-articles")
 def get_legal_articles():
@@ -499,10 +559,28 @@ async def get_legal_commentary(
     api_key: str = Depends(verify_api_key)
 ):
     """Haal wettekst + AI commentaar + jurisprudentie op"""
-    article = request.article.strip()
+    article = normalize_article(request.article.strip())
+    
+    print(f"Looking up article: '{article}'")
+    print(f"Available articles: {list(LEGAL_DATABASE.keys())}")
     
     if article not in LEGAL_DATABASE:
-        raise HTTPException(status_code=404, detail=f"Artikel {article} niet gevonden")
+        # Zoek op gedeeltelijke match
+        matched = None
+        for key in LEGAL_DATABASE.keys():
+            if article.replace(' ', '') in key.replace(' ', '') or \
+               key.replace(' ', '') in article.replace(' ', ''):
+                matched = key
+                break
+        
+        if matched:
+            article = matched
+            print(f"Partial match found: {article}")
+        else:
+            raise HTTPException(
+                status_code=404, 
+                detail=f"Artikel '{article}' niet gevonden. Beschikbaar: {', '.join(LEGAL_DATABASE.keys())}"
+            )
     
     try:
         result = await analyzer.get_legal_commentary(article)
@@ -573,8 +651,6 @@ async def export_report(
     api_key: str = Depends(verify_api_key)
 ):
     """Export analyse naar PDF of Word"""
-    # TODO: Implementeer PDF/Word generatie
-    # Voor nu: return JSON die client kan gebruiken
     return {"message": "Export functionaliteit in ontwikkeling", "data": analysis_data}
 
 if __name__ == "__main__":
