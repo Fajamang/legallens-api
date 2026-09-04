@@ -30,6 +30,7 @@
         .header p { opacity: 0.9; font-size: 1.1em; }
         .content { padding: 40px; }
         
+        /* ✅ NIEUW: Mode selector met beide knoppen blauw */
         .mode-selector {
             display: flex;
             gap: 10px;
@@ -40,21 +41,25 @@
         }
         .mode-btn {
             flex: 1;
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            background: white;
+            padding: 14px;
+            border: 3px solid #667eea;
+            background: #667eea;
+            color: white;
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.3s;
             font-weight: 600;
+            font-size: 1.05em;
+        }
+        .mode-btn:hover {
+            background: #5568d3;
+            border-color: #5568d3;
+            transform: translateY(-2px);
         }
         .mode-btn.active {
-            border-color: #667eea;
-            background: #667eea;
-            color: white;
-        }
-        .mode-btn:hover:not(.active) {
-            border-color: #667eea;
+            background: #4c51bf;
+            border-color: #4c51bf;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
         }
         
         .tabs {
@@ -308,9 +313,9 @@
         </div>
         
         <div class="content">
-            <!-- Mode Selector -->
+            <!-- ✅ NIEUW: Beide knoppen nu blauw met witte tekst -->
             <div class="mode-selector">
-                <button class="mode-btn active" onclick="setMode('standard', this)"> Standaard</button>
+                <button class="mode-btn active" onclick="setMode('standard', this)">📄 Standaard</button>
                 <button class="mode-btn" onclick="setMode('advocaat', this)">⚖️ Advocaat Mode</button>
             </div>
             
@@ -327,9 +332,18 @@
                 <div class="form-group">
                     <label>Analyse type:</label>
                     <select id="analysis-type">
-                        <option value="contract">Contract Analyse</option>
-                        <option value="due_diligence">Due Diligence</option>
-                        <option value="both">Beide</option>
+                        <option value="contract"> Contract Analyse (Algemeen)</option>
+                        <option value="due_diligence">🔍 Due Diligence</option>
+                        <option value="huurrecht">🏠 Huurrecht</option>
+                        <option value="arbeidsrecht">💼 Arbeidsrecht</option>
+                        <option value="familierecht">👨‍👩‍👧 Familierecht</option>
+                        <option value="ondernemingsrecht">🏢 Ondernemingsrecht / M&A</option>
+                        <option value="bestuursrecht">️ Bestuursrecht</option>
+                        <option value="strafrecht">️ Strafrecht</option>
+                        <option value="aansprakelijkheid">️ Aansprakelijkheid</option>
+                        <option value="ip">💡 Intellectueel Eigendom</option>
+                        <option value="compliance">✅ Compliance Check</option>
+                        <option value="both">📊 Volledige Analyse (Contract + Due Diligence)</option>
                     </select>
                 </div>
                 <button onclick="analyzeText()">Analyseer Tekst</button>
@@ -343,9 +357,18 @@
                 <div class="form-group">
                     <label>Analyse type:</label>
                     <select id="file-analysis-type">
-                        <option value="contract">Contract Analyse</option>
-                        <option value="due_diligence">Due Diligence</option>
-                        <option value="both">Beide</option>
+                        <option value="contract">📋 Contract Analyse (Algemeen)</option>
+                        <option value="due_diligence">🔍 Due Diligence</option>
+                        <option value="huurrecht"> Huurrecht</option>
+                        <option value="arbeidsrecht">💼 Arbeidsrecht</option>
+                        <option value="familierecht">👨‍👩‍ Familierecht</option>
+                        <option value="ondernemingsrecht">🏢 Ondernemingsrecht / M&A</option>
+                        <option value="bestuursrecht">🏛️ Bestuursrecht</option>
+                        <option value="strafrecht">⚖️ Strafrecht</option>
+                        <option value="aansprakelijkheid">🛡️ Aansprakelijkheid</option>
+                        <option value="ip">💡 Intellectueel Eigendom</option>
+                        <option value="compliance">✅ Compliance Check</option>
+                        <option value="both">📊 Volledige Analyse (Contract + Due Diligence)</option>
                     </select>
                 </div>
                 <button onclick="analyzeFile()">Analyseer Bestand</button>
@@ -394,7 +417,7 @@
         }
         function showError(message) {
             const errorDiv = document.getElementById('error');
-            errorDiv.textContent = '️ ' + message;
+            errorDiv.textContent = '⚠️ ' + message;
             errorDiv.classList.add('active');
         }
         function hideResults() {
@@ -471,16 +494,14 @@
             const sentimentColor = result.sentiment_score > 0.7 ? '#51cf66' : 
                                   result.sentiment_score > 0.4 ? '#ffd43b' : '#ff6b6b';
             const sentimentText = result.sentiment_score > 0.7 ? '✅ Gunstig' : 
-                                 result.sentiment_score > 0.4 ? '⚠️ Gemengd' : '❌ Ongunstig';
+                                 result.sentiment_score > 0.4 ? '️ Gemengd' : '❌ Ongunstig';
             
             let html = '';
             
-            // Time saved banner
             if (result.time_saved_hours > 0) {
                 html += `<div class="time-saved">⏱️ Tijdbesparing: ${result.time_saved_hours} uur handmatig werk</div>`;
             }
             
-            // Contract type
             html += `
                 <div class="result-section">
                     <h4> Type Document</h4>
@@ -493,7 +514,7 @@
                 </div>
                 
                 <div class="result-section">
-                    <h4>👥 Betrokken Partijen</h4>
+                    <h4> Betrokken Partijen</h4>
                     <ul>${result.parties_involved.map(p => `<li>👤 ${p}</li>`).join('')}</ul>
                 </div>
                 
@@ -505,11 +526,10 @@
                 </div>
             `;
             
-            // Due Diligence Findings (alleen als er zijn)
             if (result.due_diligence_findings && result.due_diligence_findings.length > 0) {
                 html += `
                     <div class="result-section">
-                        <h4> Due Diligence Bevindingen (${result.due_diligence_findings.length})</h4>
+                        <h4>🔍 Due Diligence Bevindingen (${result.due_diligence_findings.length})</h4>
                         ${result.due_diligence_findings.map(f => `
                             <div class="dd-finding">
                                 <span class="category-badge">${f.category}</span>
@@ -525,7 +545,6 @@
                 `;
             }
             
-            // Risks
             html += `
                 <div class="result-section">
                     <h4>⚠️ Risico's (${result.risks.length})</h4>
@@ -537,13 +556,12 @@
                             <p><strong>📋 Beschrijving:</strong> ${r.description}</p>
                             ${r.clause_quote ? `<div class="clause-quote"><strong>💬 Citaat:</strong><br>"${r.clause_quote}"</div>` : ''}
                             ${r.legal_reference ? `<div class="legal-ref">⚖️ ${r.legal_reference}</div>` : ''}
-                            <p><strong> Advies:</strong> ${r.recommendation}</p>
+                            <p><strong>💡 Advies:</strong> ${r.recommendation}</p>
                         </div>
                     `).join('')}
                 </div>
             `;
             
-            // Action Plan
             if (result.action_plan && (result.action_plan.direct || result.action_plan.short_term || result.action_plan.long_term)) {
                 html += `
                     <div class="result-section">
@@ -570,7 +588,6 @@
                 `;
             }
             
-            // Negotiation Strategy
             if (result.negotiation_strategy && result.negotiation_strategy.your_position) {
                 const posClass = (pos) => {
                     if (!pos) return '';
@@ -606,7 +623,6 @@
                 `;
             }
             
-            // Overall advice
             html += `
                 <div class="result-section">
                     <h4>🎯 Algemeen Advies</h4>
