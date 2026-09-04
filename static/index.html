@@ -5,13 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LegalLens - AI Contract Analysis</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
         }
+        
         .container {
             max-width: 900px;
             margin: 0 auto;
@@ -20,21 +26,35 @@
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             overflow: hidden;
         }
+        
         .header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 40px;
             text-align: center;
         }
-        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
-        .header p { opacity: 0.9; font-size: 1.1em; }
-        .content { padding: 40px; }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
         .tabs {
             display: flex;
             gap: 10px;
             margin-bottom: 30px;
             border-bottom: 2px solid #e0e0e0;
         }
+        
         .tab {
             padding: 12px 24px;
             cursor: pointer;
@@ -42,21 +62,55 @@
             background: none;
             font-size: 1em;
             color: #666;
+            transition: all 0.3s;
             border-bottom: 3px solid transparent;
         }
-        .tab.active { color: #667eea; border-bottom-color: #667eea; font-weight: 600; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-        .form-group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 8px; font-weight: 600; color: #333; }
+        
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            font-weight: 600;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
         textarea, input[type="file"] {
             width: 100%;
             padding: 12px;
             border: 2px solid #e0e0e0;
             border-radius: 8px;
             font-size: 1em;
+            font-family: inherit;
+            transition: border-color 0.3s;
         }
-        textarea { min-height: 200px; resize: vertical; }
+        
+        textarea:focus, input[type="file"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        textarea {
+            min-height: 200px;
+            resize: vertical;
+        }
+        
         button {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -66,11 +120,29 @@
             font-size: 1.1em;
             font-weight: 600;
             cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
         }
-        button:hover:not(:disabled) { transform: translateY(-2px); }
-        button:disabled { opacity: 0.6; cursor: not-allowed; }
-        .loading { display: none; text-align: center; padding: 40px; }
-        .loading.active { display: block; }
+        
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .loading.active {
+            display: block;
+        }
+        
         .spinner {
             border: 4px solid #f3f3f3;
             border-top: 4px solid #667eea;
@@ -80,7 +152,12 @@
             animation: spin 1s linear infinite;
             margin: 0 auto 20px;
         }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
         .result {
             display: none;
             margin-top: 30px;
@@ -89,17 +166,58 @@
             border-radius: 12px;
             border-left: 4px solid #667eea;
         }
-        .result.active { display: block; }
-        .result h3 { color: #667eea; margin-bottom: 15px; }
-        .result-section { margin-bottom: 20px; }
-        .result-section h4 { color: #333; margin-bottom: 10px; }
+        
+        .result.active {
+            display: block;
+        }
+        
+        .result h3 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+        
+        .result-section {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .result-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+        
+        .result-section h4 {
+            color: #333;
+            margin-bottom: 12px;
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+        
+        .result-section p, .result-section ul {
+            line-height: 1.6;
+            color: #555;
+        }
+        
+        .result-section ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .result-section ul li {
+            padding: 8px 0;
+        }
+        
         .risk-item {
             background: white;
             padding: 15px;
             border-radius: 8px;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
             border-left: 4px solid #ff6b6b;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
+        
         .severity-badge {
             display: inline-block;
             padding: 4px 12px;
@@ -107,12 +225,49 @@
             font-size: 0.85em;
             font-weight: 600;
             color: white;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
+        
         .severity-low { background: #51cf66; }
         .severity-medium { background: #ffd43b; color: #333; }
         .severity-high { background: #ff922b; }
         .severity-critical { background: #ff6b6b; }
+        
+        .clause-quote {
+            background: #fff3cd;
+            padding: 12px;
+            border-left: 3px solid #ffc107;
+            font-style: italic;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        
+        .advice-box {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            margin-top: 15px;
+        }
+        
+        .sentiment-bar {
+            background: #e0e0e0;
+            height: 30px;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        
+        .sentiment-fill {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            transition: width 0.5s ease;
+        }
+        
         .error {
             background: #fff5f5;
             color: #c92a2a;
@@ -122,7 +277,10 @@
             margin-top: 20px;
             display: none;
         }
-        .error.active { display: block; }
+        
+        .error.active {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -131,44 +289,58 @@
             <h1>🔍 LegalLens</h1>
             <p>AI-powered contract analysis & risk detection</p>
         </div>
+        
         <div class="content">
             <div class="tabs">
                 <button class="tab active" onclick="switchTab('text', this)">Tekst Analyseren</button>
                 <button class="tab" onclick="switchTab('file', this)">Bestand Uploaden</button>
             </div>
+            
+            <!-- Text Tab -->
             <div id="text-tab" class="tab-content active">
                 <div class="form-group">
-                    <label>Plak je contract of juridische tekst:</label>
-                    <textarea id="text-input" placeholder="Plak hier de tekst..."></textarea>
+                    <label for="text-input">Plak je contract of juridische tekst:</label>
+                    <textarea id="text-input" placeholder="Plak hier de tekst van je contract, huurovereenkomst, of ander juridisch document..."></textarea>
                 </div>
                 <button onclick="analyzeText()">Analyseer Tekst</button>
             </div>
+            
+            <!-- File Tab -->
             <div id="file-tab" class="tab-content">
                 <div class="form-group">
-                    <label>Upload een PDF of TXT bestand:</label>
+                    <label for="file-input">Upload een PDF of TXT bestand:</label>
                     <input type="file" id="file-input" accept=".pdf,.txt,.docx">
                 </div>
                 <button onclick="analyzeFile()">Analyseer Bestand</button>
             </div>
+            
+            <!-- Loading -->
             <div id="loading" class="loading">
                 <div class="spinner"></div>
                 <p>AI is je document aan het analyseren...</p>
             </div>
+            
+            <!-- Error -->
             <div id="error" class="error"></div>
+            
+            <!-- Result -->
             <div id="result" class="result">
                 <h3>📊 Analyse Resultaat</h3>
                 <div id="result-content"></div>
             </div>
         </div>
     </div>
+
     <script>
         const API_BASE = window.location.origin;
         
         function switchTab(tabName, btn) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
             btn.classList.add('active');
             document.getElementById(`${tabName}-tab`).classList.add('active');
+            
             hideResults();
         }
         
@@ -176,14 +348,17 @@
             document.getElementById('loading').classList.add('active');
             hideResults();
         }
+        
         function hideLoading() {
             document.getElementById('loading').classList.remove('active');
         }
+        
         function showError(message) {
             const errorDiv = document.getElementById('error');
-            errorDiv.textContent = '️ ' + message;
+            errorDiv.textContent = '⚠️ ' + message;
             errorDiv.classList.add('active');
         }
+        
         function hideResults() {
             document.getElementById('result').classList.remove('active');
             document.getElementById('error').classList.remove('active');
@@ -191,14 +366,25 @@
         
         async function analyzeText() {
             const text = document.getElementById('text-input').value.trim();
-            if (!text) { showError('Vul eerst een tekst in'); return; }
-            if (text.length < 50) { showError('Tekst is te kort (minimaal 50 tekens)'); return; }
+            
+            if (!text) {
+                showError('Vul eerst een tekst in');
+                return;
+            }
+            
+            if (text.length < 50) {
+                showError('Tekst is te kort (minimaal 50 tekens)');
+                return;
+            }
             
             showLoading();
+            
             try {
                 const response = await fetch(`${API_BASE}/api/analyze-text`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
                     body: JSON.stringify({ text: text })
                 });
                 
@@ -206,8 +392,10 @@
                     const error = await response.json();
                     throw new Error(error.detail || `Server error: ${response.status}`);
                 }
+                
                 const result = await response.json();
                 displayResult(result);
+                
             } catch (error) {
                 showError(error.message);
             } finally {
@@ -218,9 +406,14 @@
         async function analyzeFile() {
             const fileInput = document.getElementById('file-input');
             const file = fileInput.files[0];
-            if (!file) { showError('Selecteer eerst een bestand'); return; }
+            
+            if (!file) {
+                showError('Selecteer eerst een bestand');
+                return;
+            }
             
             showLoading();
+            
             try {
                 const formData = new FormData();
                 formData.append('file', file);
@@ -234,8 +427,10 @@
                     const error = await response.json();
                     throw new Error(error.detail || `Server error: ${response.status}`);
                 }
+                
                 const result = await response.json();
                 displayResult(result);
+                
             } catch (error) {
                 showError(error.message);
             } finally {
@@ -245,36 +440,74 @@
         
         function displayResult(result) {
             const content = document.getElementById('result-content');
+            
+            // Bepaal kleur op basis van sentiment
+            const sentimentColor = result.sentiment_score > 0.7 ? '#51cf66' : 
+                                  result.sentiment_score > 0.4 ? '#ffd43b' : '#ff6b6b';
+            
             let html = `
+                <div class="result-section">
+                    <h4>📋 Contract Type</h4>
+                    <p style="font-size: 1.2em; font-weight: 600; color: #667eea;">${result.contract_type || 'Onbekend'}</p>
+                </div>
+                
                 <div class="result-section">
                     <h4>📝 Samenvatting</h4>
                     <p>${result.summary}</p>
                 </div>
+                
                 <div class="result-section">
                     <h4> Betrokken Partijen</h4>
-                    <p>${result.parties_involved.join(', ')}</p>
+                    <ul>
+                        ${result.parties_involved.map(p => `<li>👤 ${p}</li>`).join('')}
+                    </ul>
                 </div>
+                
                 <div class="result-section">
                     <h4> Belangrijke Data</h4>
-                    <ul>${Object.entries(result.key_dates).map(([k, v]) => `<li><strong>${k}:</strong> ${v}</li>`).join('')}</ul>
+                    <ul>
+                        ${Object.entries(result.key_dates).map(([k, v]) => 
+                            `<li><strong>${k.replace('_', ' ')}:</strong> ${v}</li>`
+                        ).join('')}
+                    </ul>
                 </div>
+                
                 <div class="result-section">
                     <h4>⚠️ Risico's (${result.risks.length})</h4>
-                    ${result.risks.length === 0 ? '<p>Geen risico\'s gedetecteerd</p>' : ''}
+                    ${result.risks.length === 0 ? '<p style="color: #51cf66; font-weight: 600;">✅ Geen risico\'s gedetecteerd in dit document!</p>' : ''}
                     ${result.risks.map(r => `
                         <div class="risk-item">
                             <span class="severity-badge severity-${r.severity.toLowerCase()}">${r.severity}</span>
                             <h5>${r.clause_type}</h5>
-                            <p><strong>Beschrijving:</strong> ${r.description}</p>
-                            <p><strong>Advies:</strong> ${r.recommendation}</p>
+                            <p><strong>📋 Beschrijving:</strong> ${r.description}</p>
+                            ${r.clause_quote ? `<div class="clause-quote"><strong>💬 Citaat uit document:</strong><br>"${r.clause_quote}"</div>` : ''}
+                            <p><strong>💡 Advies:</strong> ${r.recommendation}</p>
                         </div>
                     `).join('')}
                 </div>
+                
+                <div class="result-section">
+                    <h4>🎯 Algemeen Advies</h4>
+                    <div class="advice-box">
+                        <p>${result.overall_advice}</p>
+                    </div>
+                </div>
+                
                 <div class="result-section">
                     <h4>😊 Sentiment Score</h4>
-                    <p>${(result.sentiment_score * 100).toFixed(1)}% positief</p>
+                    <div class="sentiment-bar">
+                        <div class="sentiment-fill" style="background: ${sentimentColor}; width: ${result.sentiment_score * 100}%;">
+                            ${(result.sentiment_score * 100).toFixed(1)}%
+                        </div>
+                    </div>
+                    <p style="margin-top: 10px;">
+                        ${result.sentiment_score > 0.7 ? '✅ Gunstig contract' : 
+                          result.sentiment_score > 0.4 ? '⚠️ Gemengd - let op de risico\'s' : 
+                          '❌ Ongunstig - heronderhandeling aanbevolen'}
+                    </p>
                 </div>
             `;
+            
             content.innerHTML = html;
             document.getElementById('result').classList.add('active');
         }
