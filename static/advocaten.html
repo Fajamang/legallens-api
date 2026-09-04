@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LegalLens voor Advocaten - AI-Assistent</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+        .hero {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 80px 20px;
+            text-align: center;
+        }
+        .hero h1 { font-size: 3em; margin-bottom: 20px; }
+        .hero p { font-size: 1.3em; opacity: 0.9; max-width: 700px; margin: 0 auto 30px; }
+        .cta-button {
+            display: inline-block;
+            background: white;
+            color: #1e3c72;
+            padding: 15px 40px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.1em;
+            transition: transform 0.3s;
+        }
+        .cta-button:hover { transform: translateY(-3px); }
+        .container { max-width: 1200px; margin: 0 auto; padding: 60px 20px; }
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+        .feature-card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            border-top: 4px solid #2a5298;
+        }
+        .feature-card h3 { color: #1e3c72; margin-bottom: 15px; font-size: 1.4em; }
+        .feature-card p { color: #666; }
+        .stats {
+            background: #f8f9fa;
+            padding: 60px 20px;
+            text-align: center;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 30px;
+            max-width: 1000px;
+            margin: 40px auto 0;
+        }
+        .stat-item h2 { font-size: 3em; color: #1e3c72; }
+        .stat-item p { color: #666; font-size: 1.1em; }
+        .pricing {
+            background: white;
+            padding: 60px 20px;
+        }
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            max-width: 1000px;
+            margin: 40px auto 0;
+        }
+        .pricing-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+        }
+        .pricing-card.featured {
+            border-color: #1e3c72;
+            transform: scale(1.05);
+        }
+        .pricing-card h3 { color: #1e3c72; font-size: 1.5em; margin-bottom: 10px; }
+        .price { font-size: 2.5em; color: #1e3c72; font-weight: 600; margin: 20px 0; }
+        .price span { font-size: 0.4em; color: #666; }
+        .pricing-card ul { list-style: none; margin: 20px 0; }
+        .pricing-card ul li { padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
+        .pricing-card ul li:before { content: "✓ "; color: #51cf66; font-weight: bold; }
+        .privacy-section {
+            background: #1e3c72;
+            color: white;
+            padding: 60px 20px;
+            text-align: center;
+        }
+        .privacy-section h2 { margin-bottom: 20px; }
+        .privacy-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            max-width: 1000px;
+            margin: 40px auto 0;
+            text-align: left;
+        }
+        .privacy-item {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 8px;
+        }
+        .privacy-item h4 { margin-bottom: 10px; }
+        footer {
+            background: #0f1f3d;
+            color: white;
+            text-align: center;
+            padding: 30px 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <h1>⚖️ LegalLens voor Advocaten</h1>
+        <p>Uw AI-assistent die 70% van het routinematige werk overneemt, zodat u zich kunt focussen op strategie en cliënten</p>
+        <a href="/" class="cta-button">Start Gratis Demo</a>
+    </div>
+
+    <div class="container">
+        <h2 style="text-align: center; font-size: 2.5em; color: #1e3c72;">Waarom Advocaten LegalLens Gebruiken</h2>
+        <div class="features">
+            <div class="feature-card">
+                <h3>🔍 Due Diligence in Minuten</h3>
+                <p>Analyseer 100+ documenten in 30 minuten in plaats van 40 uur. AI detecteert alle risico's, citeert wetsartikelen en kwantificeert financiële impact.</p>
+            </div>
+            <div class="feature-card">
+                <h3>⚖️ Jurisprudentie Checker</h3>
+                <p>Automatische koppeling aan relevante rechtspraak met ECLI nummers. Nooit meer handmatig zoeken in databases.</p>
+            </div>
+            <div class="feature-card">
+                <h3>📋 Strategisch Actieplan</h3>
+                <p>Concrete stappenplannen met korte, middellange en lange termijn acties. Direct uitvoerbaar door uw team.</p>
+            </div>
+            <div class="feature-card">
+                <h3>💼 Onderhandelingsstrategie</h3>
+                <p>AI analyseert uw positie vs. tegenpartij en genereert concrete argumenten, alternatieven en fallback posities.</p>
+            </div>
+            <div class="feature-card">
+                <h3>📝 Concept Documenten</h3>
+                <p>Genereer ingebrekestellingen, dagvaardingen en contracten op basis van de analyse. Altijd juridisch onderbouwd.</p>
+            </div>
+            <div class="feature-card">
+                <h3>⏱️ 70% Tijdbesparing</h3>
+                <p>Besteed minder tijd aan document review en meer aan strategie. Factureer meer uren aan hoogwaardig werk.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="stats">
+        <h2 style="font-size: 2.5em; color: #1e3c72;">Bewezen Resultaten</h2>
+        <div class="stats-grid">
+            <div class="stat-item">
+                <h2>70%</h2>
+                <p>Tijdbesparing op document review</p>
+            </div>
+            <div class="stat-item">
+                <h2>85%</h2>
+                <p>Minder risico's over het hoofd gezien</p>
+            </div>
+            <div class="stat-item">
+                <h2>€4.300</h2>
+                <p>Gemiddelde maandelijkse besparing</p>
+            </div>
+            <div class="stat-item">
+                <h2>3 min</h2>
+                <p>Gemiddelde analyse tijd</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="pricing">
+        <h2 style="text-align: center; font-size: 2.5em; color: #1e3c72;">Pricing voor Kantoren</h2>
+        <div class="pricing-grid">
+            <div class="pricing-card">
+                <h3>Solo Advocaat</h3>
+                <div class="price">€49<span>/maand</span></div>
+                <ul>
+                    <li>50 analyses/maand</li>
+                    <li>Advocaat Mode</li>
+                    <li>Jurisprudentie checker</li>
+                    <li>Email support</li>
+                </ul>
+                <a href="/" class="cta-button" style="background: #1e3c72; color: white;">Start Proefperiode</a>
+            </div>
+            <div class="pricing-card featured">
+                <h3>Klein Kantoor</h3>
+                <div class="price">€149<span>/maand</span></div>
+                <ul>
+                    <li>250 analyses/maand</li>
+                    <li>Due Diligence module</li>
+                    <li>5 gebruiker licenties</li>
+                    <li>Priority support</li>
+                    <li>Concept documenten</li>
+                </ul>
+                <a href="/" class="cta-button" style="background: #1e3c72; color: white;">Start Proefperiode</a>
+            </div>
+            <div class="pricing-card">
+                <h3>Groot Kantoor</h3>
+                <div class="price">€499<span>/maand</span></div>
+                <ul>
+                    <li>Onbeperkt analyses</li>
+                    <li>Alle features</li>
+                    <li>API toegang</li>
+                    <li>Dedicated account manager</li>
+                    <li>Custom training</li>
+                </ul>
+                <a href="/" class="cta-button" style="background: #1e3c72; color: white;">Neem Contact Op</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="privacy-section">
+        <h2>🔒 Privacy & Vertrouwelijkheid</h2>
+        <p style="font-size: 1.2em; max-width: 700px; margin: 0 auto;">Wij begrijpen het belang van beroepsgeheim. Uw data is veilig bij ons.</p>
+        <div class="privacy-grid">
+            <div class="privacy-item">
+                <h4> AES-256 Encryptie</h4>
+                <p>Alle data versleuteld tijdens transport en opslag</p>
+            </div>
+            <div class="privacy-item">
+                <h4>🇪🇺 EU Hosting</h4>
+                <p>Alle servers binnen de EU, geen VS data transfer</p>
+            </div>
+            <div class="privacy-item">
+                <h4>🗑️ Directe Verwijdering</h4>
+                <p>Documenten worden direct na analyse verwijderd</p>
+            </div>
+            <div class="privacy-item">
+                <h4>📜 NDA Beschikbaar</h4>
+                <p>Wij tekenen graag een geheimhoudingsverklaring</p>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>© 2026 LegalLens. Alle rechten voorbehouden.</p>
+        <p style="margin-top: 10px; opacity: 0.7;">Gebouwd voor de Nederlandse advocatuur</p>
+    </footer>
+</body>
+</html>
