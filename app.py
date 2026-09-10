@@ -68,7 +68,7 @@ class AnalysisResult(BaseModel):
     overall_advice: str
     sentiment_score: float
     action_plan: Dict[str, List[str]] = {}
-    negotiation_strategy: Dict[str, any] = {}
+    negotiation_strategy: Dict[str, Any] = {}  # ✅ Hoofdletter A
     due_diligence_findings: List[DueDiligenceFinding] = []
     time_saved_hours: float = 0
 
