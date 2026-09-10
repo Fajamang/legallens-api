@@ -78,56 +78,111 @@ def normalize_article(article: str) -> str:
         article = article + ' BW'
     return article
 
-# --- LIVE SEARCH ENGINE ---
+# --- LIVE SEARCH ENGINE (Verbeterd met Tavily) ---
 class LiveLegalSearch:
     def __init__(self):
-        try:
-            from duckduckgo_search import DDGS
-            self.ddgs = DDGS()
-            self.available = True
-        except Exception as e:
-            print(f"Search engine init failed: {e}")
-            self.available = False
+        self.tavily_api_key = os.getenv("TAVILY_API_KEY")
+        self.available = bool(self.tavily_api_key)
+        if not self.available:
+            print("⚠️ No Tavily API key found - using fallback")
 
     async def search_bw_text(self, article: str) -> str:
         """Zoek de exacte wettekst op wetten.overheid.nl"""
-        if not self.available:
-            return "Zoekfunctie tijdelijk niet beschikbaar."
+        import requests
         
+        if not self.available:
+            # Fallback: probeer direct wetten.overheid.nl API
+            try:
+                article_num = article.replace(" BW", "").strip()
+                url = f"https://api.overheid.nl/v1/besluiten/wetten/stop?offset=0&limit=1&zoekterm={article_num}"
+                response = requests.get(url, timeout=5)
+                if response.status_code == 200:
+                    data = response.json()
+                    if data.get("resultaten"):
+                        return data["resultaten"][0].get("samenvatting", "Tekst gevonden maar niet leesbaar")
+            except:
+                pass
+            return "Geen live wettekst beschikbaar. Raadpleeg wetten.overheid.nl"
+        
+        # Gebruik Tavily
         try:
-            query = f"Artikel {article} Burgerlijk Wetboek site:wetten.overheid.nl"
-            results = self.ddgs.text(query, max_results=1)
-            if results:
-                return results[0].get('body', 'Tekst niet gevonden.')
-            return "Wettekst niet gevonden."
+            headers = {
+                "Content-Type": "application/json",
+                "api-key": self.tavily_api_key
+            }
+            
+            query = f"Artikel {article} Burgerlijk Wetboek volledige tekst"
+            payload = {
+                "query": query,
+                "search_depth": "basic",
+                "include_answer": True,
+                "max_results": 1
+            }
+            
+            response = requests.post(
+                "https://api.tavily.com/search",
+                headers=headers,
+                json=payload,
+                timeout=10
+            )
+            response.raise_for_status()
+            result = response.json()
+            
+            if result.get("results"):
+                return result["results"][0].get("content", "Tekst gevonden")
+            
+            return "Wettekst niet gevonden op wetten.overheid.nl"
+            
         except Exception as e:
-            print(f"BW Search error: {e}")
-            return "Fout bij ophalen wettekst."
+            print(f"Tavily BW search error: {e}")
+            return "Fout bij ophalen wettekst"
 
     async def search_case_law(self, article: str) -> List[dict]:
         """Zoek recente jurisprudentie op rechtspraak.nl"""
+        import requests
+        
         if not self.available:
             return []
         
         try:
-            query = f"Artikel {article} BW uitspraak site:rechtspraak.nl"
-            results = self.ddgs.text(query, max_results=3)
+            headers = {
+                "Content-Type": "application/json",
+                "api-key": self.tavily_api_key
+            }
+            
+            query = f"Artikel {article} BW uitspraak rechtspraak Hoge Raad"
+            payload = {
+                "query": query,
+                "search_depth": "basic",
+                "include_answer": False,
+                "max_results": 3
+            }
+            
+            response = requests.post(
+                "https://api.tavily.com/search",
+                headers=headers,
+                json=payload,
+                timeout=10
+            )
+            response.raise_for_status()
+            results = response.json()
             
             cases = []
-            for r in results:
+            for r in results.get("results", []):
                 cases.append({
                     "title": r.get('title', 'Onbekende zaak'),
-                    "url": r.get('href', ''),
-                    "snippet": r.get('body', ''),
-                    "date": "Recent"
+                    "url": r.get('url', ''),
+                    "snippet": r.get('content', ''),
+                    "date": "Recent",
+                    "ecli": r.get('title', 'Zaak')
                 })
             return cases
+            
         except Exception as e:
-            print(f"Case law search error: {e}")
+            print(f"Tavily case law search error: {e}")
             return []
 
 live_search = LiveLegalSearch()
-
 # --- AI Analyzer ---
 class AIAnalyzer:
     def __init__(self):
