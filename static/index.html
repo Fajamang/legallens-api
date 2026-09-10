@@ -62,7 +62,6 @@
         }
         
         .sidebar-nav { padding: 16px 0; }
-        
         .nav-section { margin-bottom: 16px; }
         
         .nav-section-title {
@@ -176,7 +175,6 @@
         }
         
         .stat-value { font-size: 2em; font-weight: 700; color: var(--text); }
-        
         .stat-change { font-size: 0.85em; color: var(--success); margin-top: 4px; }
         
         .section-card {
@@ -228,7 +226,6 @@
         }
         
         .btn-secondary:hover { background: var(--border); }
-        
         .btn-sm { padding: 6px 12px; font-size: 0.85em; }
         
         .dossier-list { display: flex; flex-direction: column; gap: 12px; }
@@ -251,7 +248,6 @@
         }
         
         .dossier-info h4 { font-size: 1.05em; margin-bottom: 4px; }
-        
         .dossier-meta { font-size: 0.85em; color: var(--text-light); }
         
         .dossier-status {
@@ -265,12 +261,46 @@
         .status-pending { background: #fff3cd; color: #856404; }
         .status-closed { background: #e2e8f0; color: #718096; }
         
-        .file-list {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-top: 12px;
+        .analysis-list { display: flex; flex-direction: column; gap: 12px; }
+        
+        .analysis-item {
+            background: white;
+            padding: 16px 20px;
+            border-radius: 10px;
+            border: 2px solid var(--border);
+            cursor: pointer;
+            transition: all 0.2s;
         }
+        
+        .analysis-item:hover {
+            border-color: var(--accent);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+        }
+        
+        .analysis-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .analysis-title { font-weight: 600; color: var(--text); }
+        .analysis-date { font-size: 0.85em; color: var(--text-light); }
+        
+        .analysis-preview {
+            display: flex;
+            gap: 16px;
+            font-size: 0.9em;
+            color: var(--text-light);
+        }
+        
+        .analysis-stat {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .file-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
         
         .file-item {
             background: white;
@@ -282,18 +312,9 @@
             border: 1px solid var(--border);
         }
         
-        .file-info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        
-        .file-icon {
-            font-size: 1.5em;
-        }
-        
+        .file-info { display: flex; align-items: center; gap: 12px; }
+        .file-icon { font-size: 1.5em; }
         .file-name { font-weight: 600; }
-        
         .file-size { font-size: 0.85em; color: var(--text-light); }
         
         .analysis-form {
@@ -566,9 +587,7 @@
         }
         
         .file-upload-area .icon { font-size: 3em; margin-bottom: 12px; }
-        
         .file-upload-area p { color: var(--text-light); margin-bottom: 8px; }
-        
         .file-upload-area .hint { font-size: 0.85em; color: var(--text-light); }
         
         .uploaded-files {
@@ -587,6 +606,21 @@
             align-items: center;
             border: 1px solid var(--border);
         }
+        
+        .detail-view {
+            background: white;
+            border-radius: 12px;
+            padding: 32px;
+        }
+        
+        .detail-header {
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid var(--border);
+        }
+        
+        .detail-title { font-size: 1.5em; margin-bottom: 8px; }
+        .detail-meta { color: var(--text-light); font-size: 0.9em; }
         
         @media (max-width: 768px) {
             .sidebar { transform: translateX(-100%); }
@@ -613,6 +647,9 @@
                     </div>
                     <div class="nav-item" onclick="showView('dossiers', this)">
                         <span class="icon">📁</span><span>Dossiers</span>
+                    </div>
+                    <div class="nav-item" onclick="showView('analyses', this)">
+                        <span class="icon">📊</span><span>Analyses</span>
                     </div>
                     <div class="nav-item" onclick="showView('analyze', this)">
                         <span class="icon">🔍</span><span>Nieuwe Analyse</span>
@@ -703,7 +740,7 @@
                             <div class="section-title"> Snelle Acties</div>
                         </div>
                         <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                            <button class="btn btn-primary" onclick="showView('analyze', document.querySelectorAll('.nav-item')[2])">
+                            <button class="btn btn-primary" onclick="showView('analyze', document.querySelectorAll('.nav-item')[3])">
                                 🔍 Nieuwe Analyse
                             </button>
                             <button class="btn btn-secondary" onclick="openNewDossierModal()">
@@ -729,6 +766,24 @@
                     </div>
                 </div>
                 
+                <!-- ANALYSES -->
+                <div id="view-analyses" class="view">
+                    <div class="section-card">
+                        <div class="section-header">
+                            <div class="section-title">📊 Analyse Geschiedenis</div>
+                            <div style="font-size: 0.9em; color: var(--text-light);">
+                                Totaal: <strong id="total-analyses-count">0</strong> analyses
+                            </div>
+                        </div>
+                        <div id="all-analyses" class="analysis-list">
+                            <div class="empty-state">
+                                <div class="icon">📊</div>
+                                <p>Nog geen analyses uitgevoerd</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- ANALYZE -->
                 <div id="view-analyze" class="view">
                     <div class="analysis-form">
@@ -750,14 +805,14 @@
                             <label>Analyse type:</label>
                             <select id="analysis-type">
                                 <option value="contract">📋 Contract Analyse</option>
-                                <option value="due_diligence">🔍 Due Diligence</option>
+                                <option value="due_diligence"> Due Diligence</option>
                                 <option value="huurrecht">🏠 Huurrecht</option>
                                 <option value="arbeidsrecht">💼 Arbeidsrecht</option>
                                 <option value="familierecht">👨‍👩‍👧 Familierecht</option>
                                 <option value="ondernemingsrecht">🏢 Ondernemingsrecht / M&A</option>
                                 <option value="bestuursrecht">🏛️ Bestuursrecht</option>
                                 <option value="strafrecht">⚖️ Strafrecht</option>
-                                <option value="aansprakelijkheid">🛡️ Aansprakelijkheid</option>
+                                <option value="aansprakelijkheid">️ Aansprakelijkheid</option>
                                 <option value="ip">💡 Intellectueel Eigendom</option>
                                 <option value="compliance">✅ Compliance Check</option>
                                 <option value="both">📊 Volledige Analyse</option>
@@ -767,7 +822,7 @@
                         <div class="form-group">
                             <label>Of upload een bestand (PDF/TXT/DOCX):</label>
                             <div class="file-upload-area" onclick="document.getElementById('file-input').click()">
-                                <div class="icon">📄</div>
+                                <div class="icon"></div>
                                 <p><strong>Klik om bestand te uploaden</strong></p>
                                 <div class="hint">PDF, TXT of DOCX (max 10MB)</div>
                             </div>
@@ -888,6 +943,17 @@
             </div>
         </div>
     </div>
+    
+    <!-- Analysis Detail Modal -->
+    <div class="modal-overlay" id="analysis-modal">
+        <div class="modal" style="max-width: 800px;">
+            <div class="detail-view" id="analysis-detail-content"></div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeAnalysisModal()">Sluiten</button>
+                <button class="btn btn-primary" onclick="window.print()"> Afdrukken</button>
+            </div>
+        </div>
+    </div>
 
     <script>
         const API_BASE = window.location.origin;
@@ -901,6 +967,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             updateDashboard();
             renderDossiers();
+            renderAnalyses();
             updateDossierSelect();
         });
         
@@ -914,6 +981,7 @@
             const titles = {
                 'dashboard': 'Dashboard',
                 'dossiers': 'Dossiers',
+                'analyses': 'Analyses',
                 'analyze': 'Nieuwe Analyse',
                 'settings': 'Instellingen'
             };
@@ -921,6 +989,7 @@
             
             if (viewName === 'dashboard') updateDashboard();
             if (viewName === 'dossiers') renderDossiers();
+            if (viewName === 'analyses') renderAnalyses();
         }
         
         function showComingSoon(feature) {
@@ -1012,10 +1081,9 @@
                 status: 'active',
                 created: new Date().toISOString(),
                 files: [],
-                analyses: []
+                analysisIds: []
             };
             
-            // Upload file if selected
             if (dossierSelectedFile) {
                 try {
                     const formData = new FormData();
@@ -1023,7 +1091,6 @@
                     formData.append('mode', 'standard');
                     formData.append('analysis_type', 'contract');
                     
-                    // Show loading
                     document.getElementById('dossier-uploaded-files').innerHTML = `
                         <div class="uploaded-file">
                             <div class="file-info">
@@ -1048,28 +1115,28 @@
                             size: dossierSelectedFile.size,
                             uploaded: new Date().toISOString()
                         });
-                        dossier.analyses.push(result);
+                        dossier.analysisIds.push(result.document_id);
                         
                         analyses.unshift({
                             ...result,
                             dossierId: dossier.id,
+                            dossierName: name,
                             timestamp: new Date().toISOString()
                         });
-                    } else {
-                        alert('Bestand geüpload maar analyse mislukt');
+                        
+                        localStorage.setItem('legallens_analyses', JSON.stringify(analyses));
                     }
                 } catch (error) {
                     console.error('Upload error:', error);
-                    alert('Fout bij uploaden: ' + error.message);
                 }
             }
             
             dossiers.unshift(dossier);
             localStorage.setItem('legallens_dossiers', JSON.stringify(dossiers));
-            localStorage.setItem('legallens_analyses', JSON.stringify(analyses));
             
             closeDossierModal();
             renderDossiers();
+            renderAnalyses();
             updateDossierSelect();
             updateDashboard();
             
@@ -1089,43 +1156,163 @@
                 return;
             }
             
-            container.innerHTML = dossiers.map(d => `
-                <div class="dossier-item" style="flex-direction: column; align-items: stretch;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div class="dossier-info">
-                            <h4>${d.name}</h4>
-                            <div class="dossier-meta">
-                                👤 ${d.client || 'Geen klant'} • 📋 ${d.type} • 📅 ${new Date(d.created).toLocaleDateString('nl-NL')}
+            container.innerHTML = dossiers.map(d => {
+                const dossierAnalyses = analyses.filter(a => a.dossierId === d.id);
+                return `
+                    <div class="dossier-item" style="flex-direction: column; align-items: stretch;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div class="dossier-info">
+                                <h4>${d.name}</h4>
+                                <div class="dossier-meta">
+                                    👤 ${d.client || 'Geen klant'} • 📋 ${d.type} •  ${new Date(d.created).toLocaleDateString('nl-NL')}
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                <span class="dossier-status status-${d.status}">${d.status === 'active' ? 'Actief' : d.status}</span>
+                                <button class="btn btn-sm btn-secondary" onclick="addFileToDossier('${d.id}')">📄 Bestand</button>
+                                <button class="btn btn-sm btn-secondary" onclick="deleteDossier('${d.id}')">️</button>
                             </div>
                         </div>
-                        <div style="display: flex; gap: 8px; align-items: center;">
-                            <span class="dossier-status status-${d.status}">${d.status === 'active' ? 'Actief' : d.status}</span>
-                            <button class="btn btn-sm btn-secondary" onclick="addFileToDossier('${d.id}')">📄 Bestand</button>
-                            <button class="btn btn-sm btn-secondary" onclick="deleteDossier('${d.id}')">️</button>
-                        </div>
-                    </div>
-                    ${d.files && d.files.length > 0 ? `
-                        <div class="file-list">
-                            ${d.files.map(f => `
-                                <div class="file-item">
-                                    <div class="file-info">
-                                        <span class="file-icon">📄</span>
-                                        <div>
-                                            <div class="file-name">${f.name}</div>
-                                            <div class="file-size">${(f.size / 1024).toFixed(1)} KB • ${new Date(f.uploaded).toLocaleDateString('nl-NL')}</div>
+                        ${d.files && d.files.length > 0 ? `
+                            <div class="file-list">
+                                ${d.files.map(f => `
+                                    <div class="file-item">
+                                        <div class="file-info">
+                                            <span class="file-icon">📄</span>
+                                            <div>
+                                                <div class="file-name">${f.name}</div>
+                                                <div class="file-size">${(f.size / 1024).toFixed(1)} KB • ${new Date(f.uploaded).toLocaleDateString('nl-NL')}</div>
+                                            </div>
                                         </div>
                                     </div>
+                                `).join('')}
+                            </div>
+                        ` : '<div style="margin-top: 8px; font-size: 0.85em; color: var(--text-light);"> Geen bestanden</div>'}
+                        ${dossierAnalyses.length > 0 ? `
+                            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border);">
+                                <div style="font-size: 0.85em; color: var(--success); margin-bottom: 8px;">
+                                    ✅ ${dossierAnalyses.length} analyse(s)
                                 </div>
-                            `).join('')}
+                                ${dossierAnalyses.slice(0, 2).map(a => `
+                                    <div class="analysis-item" style="margin-bottom: 8px; cursor: pointer;" onclick="viewAnalysis('${a.document_id}')">
+                                        <div class="analysis-header">
+                                            <div class="analysis-title">${a.contract_type || 'Analyse'}</div>
+                                            <div class="analysis-date">${new Date(a.timestamp).toLocaleDateString('nl-NL')}</div>
+                                        </div>
+                                        <div class="analysis-preview">
+                                            <span class="analysis-stat">️ ${a.risks?.length || 0} risico's</span>
+                                            <span class="analysis-stat">⏱️ ${(a.time_saved_hours || 0).toFixed(1)}u bespaard</span>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                                ${dossierAnalyses.length > 2 ? `<div style="text-align: center; margin-top: 8px;"><button class="btn btn-sm btn-secondary" onclick="showView('analyses', document.querySelectorAll('.nav-item')[2])">Bekijk alle ${dossierAnalyses.length} analyses →</button></div>` : ''}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function renderAnalyses() {
+            const container = document.getElementById('all-analyses');
+            document.getElementById('total-analyses-count').textContent = analyses.length;
+            
+            if (analyses.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">📊</div>
+                        <p>Nog geen analyses uitgevoerd</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = analyses.map(a => `
+                <div class="analysis-item" onclick="viewAnalysis('${a.document_id}')">
+                    <div class="analysis-header">
+                        <div>
+                            <div class="analysis-title">${a.contract_type || 'Juridische Analyse'}</div>
+                            <div class="analysis-date">
+                                ${a.dossierName ? `📁 ${a.dossierName} • ` : ''}
+                                ${new Date(a.timestamp).toLocaleString('nl-NL')}
+                            </div>
                         </div>
-                    ` : '<div style="margin-top: 8px; font-size: 0.85em; color: var(--text-light);">📎 Geen bestanden</div>'}
-                    ${d.analyses && d.analyses.length > 0 ? `
-                        <div style="margin-top: 8px; font-size: 0.85em; color: var(--success);">
-                            ✅ ${d.analyses.length} analyse(s) voltooid
-                        </div>
-                    ` : ''}
+                        <button class="btn btn-sm btn-primary">Bekijk details →</button>
+                    </div>
+                    <div class="analysis-preview">
+                        <span class="analysis-stat">️ ${a.risks?.length || 0} risico's</span>
+                        <span class="analysis-stat">👥 ${a.parties_involved?.length || 0} partijen</span>
+                        <span class="analysis-stat">️ ${(a.time_saved_hours || 0).toFixed(1)}u bespaard</span>
+                        <span class="analysis-stat">${a.sentiment_score >= 0.7 ? '😊' : a.sentiment_score >= 0.4 ? '😐' : '😟'} ${(a.sentiment_score * 100).toFixed(0)}%</span>
+                    </div>
                 </div>
             `).join('');
+        }
+        
+        function viewAnalysis(documentId) {
+            const analysis = analyses.find(a => a.document_id === documentId);
+            if (!analysis) return;
+            
+            const content = document.getElementById('analysis-detail-content');
+            content.innerHTML = `
+                <div class="detail-header">
+                    <div class="detail-title">${analysis.contract_type || 'Juridische Analyse'}</div>
+                    <div class="detail-meta">
+                        ${analysis.dossierName ? `📁 ${analysis.dossierName} • ` : ''}
+                        ${new Date(analysis.timestamp).toLocaleString('nl-NL')}
+                    </div>
+                </div>
+                
+                <div class="result-section">
+                    <h4> Samenvatting</h4>
+                    <p style="line-height: 1.6;">${analysis.summary}</p>
+                </div>
+                
+                <div class="result-section">
+                    <h4>👥 Betrokken Partijen</h4>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        ${analysis.parties_involved.map(p => `
+                            <div style="padding: 10px; background: var(--bg); border-radius: 6px;">👤 ${p}</div>
+                        `).join('')}
+                    </div>
+                </div>
+                
+                ${analysis.risks && analysis.risks.length > 0 ? `
+                    <div class="result-section">
+                        <h4>⚠️ Risico's (${analysis.risks.length})</h4>
+                        ${analysis.risks.map(r => `
+                            <div class="risk-item">
+                                <span class="severity-badge severity-${r.severity.toLowerCase()}">${r.severity}</span>
+                                <h5 style="margin: 8px 0;">${r.clause_type}</h5>
+                                <p><strong>📋 Beschrijving:</strong> ${r.description}</p>
+                                <p><strong>💡 Advies:</strong> ${r.recommendation}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : ''}
+                
+                <div class="result-section">
+                    <h4>😊 Sentiment Score</h4>
+                    <div style="background: var(--border); height: 35px; border-radius: 18px; overflow: hidden;">
+                        <div style="background: ${analysis.sentiment_score >= 0.7 ? '#51cf66' : analysis.sentiment_score >= 0.4 ? '#ffd43b' : '#ff6b6b'}; height: 100%; width: ${analysis.sentiment_score * 100}%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;">
+                            ${(analysis.sentiment_score * 100).toFixed(1)}%
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="result-section">
+                    <h4>⏱️ Tijdbesparing</h4>
+                    <div style="background: linear-gradient(135deg, #51cf66 0%, #40c057 100%); color: white; padding: 16px; border-radius: 8px; text-align: center; font-weight: 600;">
+                        ${analysis.time_saved_hours || 0} uur handmatig werk bespaard
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('analysis-modal').classList.add('active');
+        }
+        
+        function closeAnalysisModal() {
+            document.getElementById('analysis-modal').classList.remove('active');
         }
         
         async function addFileToDossier(dossierId) {
@@ -1159,11 +1346,12 @@
                             size: file.size,
                             uploaded: new Date().toISOString()
                         });
-                        dossier.analyses.push(result);
+                        dossier.analysisIds.push(result.document_id);
                         
                         analyses.unshift({
                             ...result,
                             dossierId: dossier.id,
+                            dossierName: dossier.name,
                             timestamp: new Date().toISOString()
                         });
                         
@@ -1171,6 +1359,7 @@
                         localStorage.setItem('legallens_analyses', JSON.stringify(analyses));
                         
                         renderDossiers();
+                        renderAnalyses();
                         updateDashboard();
                         
                         alert('Bestand geüpload en geanalyseerd!');
@@ -1187,8 +1376,11 @@
         function deleteDossier(id) {
             if (confirm('Weet je zeker dat je dit dossier wilt verwijderen?')) {
                 dossiers = dossiers.filter(d => d.id !== id);
+                analyses = analyses.filter(a => a.dossierId !== id);
                 localStorage.setItem('legallens_dossiers', JSON.stringify(dossiers));
+                localStorage.setItem('legallens_analyses', JSON.stringify(analyses));
                 renderDossiers();
+                renderAnalyses();
                 updateDossierSelect();
                 updateDashboard();
             }
@@ -1219,18 +1411,38 @@
                     </div>
                 `;
             } else {
-                recentContainer.innerHTML = dossiers.slice(0, 3).map(d => `
-                    <div class="dossier-item">
-                        <div class="dossier-info">
-                            <h4>${d.name}</h4>
-                            <div class="dossier-meta">
-                                👤 ${d.client || 'Geen klant'} • 📋 ${d.type}
+                recentContainer.innerHTML = dossiers.slice(0, 3).map(d => {
+                    const dossierAnalyses = analyses.filter(a => a.dossierId === d.id);
+                    return `
+                        <div class="dossier-item" onclick="viewDossier('${d.id}')">
+                            <div class="dossier-info">
+                                <h4>${d.name}</h4>
+                                <div class="dossier-meta">
+                                    👤 ${d.client || 'Geen klant'} • 📋 ${d.type} • 📊 ${dossierAnalyses.length} analyses
+                                </div>
                             </div>
+                            <span class="dossier-status status-${d.status}">${d.status === 'active' ? 'Actief' : d.status}</span>
                         </div>
-                        <span class="dossier-status status-${d.status}">${d.status === 'active' ? 'Actief' : d.status}</span>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
             }
+        }
+        
+        function viewDossier(dossierId) {
+            const dossier = dossiers.find(d => d.id === dossierId);
+            if (!dossier) return;
+            
+            showView('dossiers', document.querySelectorAll('.nav-item')[1]);
+            setTimeout(() => {
+                const dossierElement = document.querySelector(`.dossier-item[onclick*="${dossierId}"]`);
+                if (dossierElement) {
+                    dossierElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    dossierElement.style.borderColor = 'var(--accent)';
+                    setTimeout(() => {
+                        dossierElement.style.borderColor = 'transparent';
+                    }, 2000);
+                }
+            }, 100);
         }
         
         async function analyzeText() {
@@ -1255,7 +1467,6 @@
                 let result;
                 
                 if (selectedFile) {
-                    // Upload file
                     const formData = new FormData();
                     formData.append('file', selectedFile);
                     formData.append('mode', currentMode);
@@ -1273,7 +1484,6 @@
                     
                     result = await response.json();
                 } else {
-                    // Analyze text
                     const response = await fetch(`${API_BASE}/api/analyze-text`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -1290,30 +1500,32 @@
                 
                 currentAnalysis = result;
                 
+                const dossier = dossiers.find(d => d.id === dossierId);
+                
                 analyses.unshift({
                     ...result,
                     dossierId,
+                    dossierName: dossier ? dossier.name : null,
                     timestamp: new Date().toISOString()
                 });
                 localStorage.setItem('legallens_analyses', JSON.stringify(analyses));
                 
                 if (dossierId) {
-                    const dossier = dossiers.find(d => d.id === dossierId);
-                    if (dossier) {
-                        dossier.analyses.push(result);
-                        if (selectedFile) {
-                            dossier.files.push({
-                                name: selectedFile.name,
-                                size: selectedFile.size,
-                                uploaded: new Date().toISOString()
-                            });
-                        }
-                        localStorage.setItem('legallens_dossiers', JSON.stringify(dossiers));
+                    dossier.analysisIds.push(result.document_id);
+                    if (selectedFile) {
+                        dossier.files.push({
+                            name: selectedFile.name,
+                            size: selectedFile.size,
+                            uploaded: new Date().toISOString()
+                        });
                     }
+                    localStorage.setItem('legallens_dossiers', JSON.stringify(dossiers));
                 }
                 
                 displayResult(result);
                 updateDashboard();
+                renderAnalyses();
+                renderDossiers();
                 
             } catch (error) {
                 alert('Fout: ' + error.message);
@@ -1383,7 +1595,7 @@
                                 <h5 style="margin: 8px 0;">${r.clause_type}</h5>
                                 <p><strong>📋 Beschrijving:</strong> ${r.description}</p>
                                 ${r.clause_quote ? `<div style="background: #fff3cd; padding: 10px; border-left: 3px solid #ffc107; font-style: italic; margin: 10px 0; border-radius: 4px;"><strong> Citaat:</strong><br>"${r.clause_quote}"</div>` : ''}
-                                ${r.legal_reference ? `<div class="legal-ref" onclick="openRefSidebar('${r.legal_reference}')">⚖️ ${r.legal_reference} (klik voor details)</div>` : ''}
+                                ${r.legal_reference ? `<div class="legal-ref" onclick="openRefSidebar('${r.legal_reference}')">️ ${r.legal_reference} (klik voor details)</div>` : ''}
                                 <p><strong>💡 Advies:</strong> ${r.recommendation}</p>
                             </div>
                         `).join('')}
@@ -1559,7 +1771,7 @@
                 content.innerHTML = html;
                 
             } catch (error) {
-                content.innerHTML = `<div style="background: #fff5f5; padding: 16px; border-radius: 8px; color: var(--danger);">⚠️ ${error.message}</div>`;
+                content.innerHTML = `<div style="background: #fff5f5; padding: 16px; border-radius: 8px; color: var(--danger);">️ ${error.message}</div>`;
             }
         }
         
