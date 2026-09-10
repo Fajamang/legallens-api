@@ -23,7 +23,7 @@
         }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: var(--bg);
             color: var(--text);
             line-height: 1.6;
@@ -39,6 +39,7 @@
             height: 100vh;
             overflow-y: auto;
             z-index: 100;
+            transition: transform 0.3s ease;
         }
         
         .sidebar-header {
@@ -142,6 +143,15 @@
             font-size: 0.85em;
         }
         
+        .hamburger {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.5em;
+            cursor: pointer;
+            color: var(--text);
+        }
+        
         .content-area { padding: 32px; }
         
         .view { display: none; }
@@ -192,6 +202,8 @@
             margin-bottom: 20px;
             padding-bottom: 16px;
             border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+            gap: 12px;
         }
         
         .section-title { font-size: 1.2em; font-weight: 600; color: var(--text); }
@@ -282,6 +294,8 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 8px;
         }
         
         .analysis-title { font-weight: 600; color: var(--text); }
@@ -292,13 +306,10 @@
             gap: 16px;
             font-size: 0.9em;
             color: var(--text-light);
+            flex-wrap: wrap;
         }
         
-        .analysis-stat {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
+        .analysis-stat { display: flex; align-items: center; gap: 4px; }
         
         .file-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
         
@@ -561,6 +572,7 @@
             gap: 12px;
             justify-content: flex-end;
             margin-top: 24px;
+            flex-wrap: wrap;
         }
         
         .empty-state {
@@ -622,17 +634,91 @@
         .detail-title { font-size: 1.5em; margin-bottom: 8px; }
         .detail-meta { color: var(--text-light); font-size: 0.9em; }
         
+        /* Mobile Responsive */
         @media (max-width: 768px) {
-            .sidebar { transform: translateX(-100%); }
-            .sidebar.mobile-open { transform: translateX(0); }
-            .main-content { margin-left: 0; }
-            .ref-sidebar { width: 100%; }
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.mobile-open {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .hamburger {
+                display: block;
+            }
+            
+            .content-area {
+                padding: 16px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .topbar {
+                padding: 12px 16px;
+            }
+            
+            .topbar-title {
+                font-size: 1.1em;
+            }
+            
+            .user-badge span {
+                display: none;
+            }
+            
+            .section-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .dossier-item {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 12px;
+            }
+            
+            .mode-selector {
+                flex-direction: column;
+            }
+            
+            .analysis-preview {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .ref-sidebar {
+                width: 100%;
+            }
+            
+            .modal {
+                width: 95%;
+                padding: 20px;
+            }
+            
+            .modal-actions {
+                flex-direction: column;
+            }
+            
+            .modal-actions .btn {
+                width: 100%;
+            }
         }
     </style>
 </head>
 <body>
     <div class="app-container">
-        <aside class="sidebar">
+        <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <div class="sidebar-logo">
                     ️ LegalLens <span>PRO</span>
@@ -662,7 +748,7 @@
                         <span class="icon">📝</span><span>Document Drafter</span>
                     </div>
                     <div class="nav-item" onclick="showComingSoon('Tabel Module')">
-                        <span class="icon"></span><span>Tabel Module</span>
+                        <span class="icon">📊</span><span>Tabel Module</span>
                     </div>
                     <div class="nav-item" onclick="showComingSoon('Bulk Analyse')">
                         <span class="icon">📦</span><span>Bulk Analyse</span>
@@ -678,13 +764,14 @@
             </nav>
             
             <div class="sidebar-footer">
-                LegalLens Pro v8.0<br>
+                LegalLens Pro v9.0<br>
                 © 2026 Fajamang
             </div>
         </aside>
         
         <main class="main-content">
             <div class="topbar">
+                <button class="hamburger" onclick="toggleSidebar()">☰</button>
                 <div class="topbar-title" id="page-title">Dashboard</div>
                 <div class="topbar-actions">
                     <div class="user-badge">
@@ -722,7 +809,7 @@
                     
                     <div class="section-card">
                         <div class="section-header">
-                            <div class="section-title">📁 Recente Dossiers</div>
+                            <div class="section-title"> Recente Dossiers</div>
                             <button class="btn btn-primary" onclick="showView('dossiers', document.querySelectorAll('.nav-item')[1])">
                                 Bekijk alle →
                             </button>
@@ -737,17 +824,17 @@
                     
                     <div class="section-card">
                         <div class="section-header">
-                            <div class="section-title"> Snelle Acties</div>
+                            <div class="section-title">⚡ Snelle Acties</div>
                         </div>
                         <div style="display: flex; gap: 12px; flex-wrap: wrap;">
                             <button class="btn btn-primary" onclick="showView('analyze', document.querySelectorAll('.nav-item')[3])">
                                 🔍 Nieuwe Analyse
                             </button>
                             <button class="btn btn-secondary" onclick="openNewDossierModal()">
-                                 Nieuw Dossier
+                                📁 Nieuw Dossier
                             </button>
                             <button class="btn btn-secondary" onclick="showComingSoon('Document Drafter')">
-                                 Document Drafter
+                                📝 Document Drafter
                             </button>
                         </div>
                     </div>
@@ -757,7 +844,7 @@
                 <div id="view-dossiers" class="view">
                     <div class="section-card">
                         <div class="section-header">
-                            <div class="section-title">📁 Alle Dossiers</div>
+                            <div class="section-title"> Alle Dossiers</div>
                             <button class="btn btn-primary" onclick="openNewDossierModal()">
                                 + Nieuw Dossier
                             </button>
@@ -798,17 +885,17 @@
                         
                         <div class="mode-selector">
                             <div class="mode-btn active" onclick="setMode('standard', this)">📄 Standaard</div>
-                            <div class="mode-btn" onclick="setMode('advocaat', this)">️ Advocaat Mode</div>
+                            <div class="mode-btn" onclick="setMode('advocaat', this)">⚖️ Advocaat Mode</div>
                         </div>
                         
                         <div class="form-group">
                             <label>Analyse type:</label>
                             <select id="analysis-type">
                                 <option value="contract">📋 Contract Analyse</option>
-                                <option value="due_diligence"> Due Diligence</option>
+                                <option value="due_diligence">🔍 Due Diligence</option>
                                 <option value="huurrecht">🏠 Huurrecht</option>
                                 <option value="arbeidsrecht">💼 Arbeidsrecht</option>
-                                <option value="familierecht">👨‍👩‍👧 Familierecht</option>
+                                <option value="familierecht">‍👩‍👧 Familierecht</option>
                                 <option value="ondernemingsrecht">🏢 Ondernemingsrecht / M&A</option>
                                 <option value="bestuursrecht">🏛️ Bestuursrecht</option>
                                 <option value="strafrecht">⚖️ Strafrecht</option>
@@ -822,7 +909,7 @@
                         <div class="form-group">
                             <label>Of upload een bestand (PDF/TXT/DOCX):</label>
                             <div class="file-upload-area" onclick="document.getElementById('file-input').click()">
-                                <div class="icon"></div>
+                                <div class="icon">📄</div>
                                 <p><strong>Klik om bestand te uploaden</strong></p>
                                 <div class="hint">PDF, TXT of DOCX (max 10MB)</div>
                             </div>
@@ -835,7 +922,7 @@
                             <textarea id="text-input" placeholder="Plak hier de tekst van je document..."></textarea>
                         </div>
                         
-                        <div style="display: flex; gap: 12px;">
+                        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
                             <button class="btn btn-primary" onclick="analyzeText()">🔍 Analyseer</button>
                             <button class="btn btn-secondary" onclick="clearForm()">Wissen</button>
                         </div>
@@ -892,7 +979,7 @@
     <div class="ref-sidebar" id="ref-sidebar">
         <div class="ref-sidebar-header">
             <button class="ref-close" onclick="closeRefSidebar()">×</button>
-            <h2 id="ref-title"> Wetsartikel</h2>
+            <h2 id="ref-title">📚 Wetsartikel</h2>
             <div id="ref-subtitle" style="opacity: 0.9;">Laden...</div>
         </div>
         <div class="ref-content" id="ref-content"></div>
@@ -950,7 +1037,7 @@
             <div class="detail-view" id="analysis-detail-content"></div>
             <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="closeAnalysisModal()">Sluiten</button>
-                <button class="btn btn-primary" onclick="window.print()"> Afdrukken</button>
+                <button class="btn btn-primary" onclick="window.print()">🖨️ Afdrukken</button>
             </div>
         </div>
     </div>
@@ -971,6 +1058,10 @@
             updateDossierSelect();
         });
         
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('mobile-open');
+        }
+        
         function showView(viewName, navElement) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -990,6 +1081,11 @@
             if (viewName === 'dashboard') updateDashboard();
             if (viewName === 'dossiers') renderDossiers();
             if (viewName === 'analyses') renderAnalyses();
+            
+            // Close sidebar on mobile
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').classList.remove('mobile-open');
+            }
         }
         
         function showComingSoon(feature) {
@@ -1160,14 +1256,14 @@
                 const dossierAnalyses = analyses.filter(a => a.dossierId === d.id);
                 return `
                     <div class="dossier-item" style="flex-direction: column; align-items: stretch;">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
                             <div class="dossier-info">
                                 <h4>${d.name}</h4>
                                 <div class="dossier-meta">
-                                    👤 ${d.client || 'Geen klant'} • 📋 ${d.type} •  ${new Date(d.created).toLocaleDateString('nl-NL')}
+                                    👤 ${d.client || 'Geen klant'} • 📋 ${d.type} • 📅 ${new Date(d.created).toLocaleDateString('nl-NL')}
                                 </div>
                             </div>
-                            <div style="display: flex; gap: 8px; align-items: center;">
+                            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
                                 <span class="dossier-status status-${d.status}">${d.status === 'active' ? 'Actief' : d.status}</span>
                                 <button class="btn btn-sm btn-secondary" onclick="addFileToDossier('${d.id}')">📄 Bestand</button>
                                 <button class="btn btn-sm btn-secondary" onclick="deleteDossier('${d.id}')">️</button>
@@ -1187,7 +1283,7 @@
                                     </div>
                                 `).join('')}
                             </div>
-                        ` : '<div style="margin-top: 8px; font-size: 0.85em; color: var(--text-light);"> Geen bestanden</div>'}
+                        ` : '<div style="margin-top: 8px; font-size: 0.85em; color: var(--text-light);">📎 Geen bestanden</div>'}
                         ${dossierAnalyses.length > 0 ? `
                             <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border);">
                                 <div style="font-size: 0.85em; color: var(--success); margin-bottom: 8px;">
@@ -1240,9 +1336,9 @@
                         <button class="btn btn-sm btn-primary">Bekijk details →</button>
                     </div>
                     <div class="analysis-preview">
-                        <span class="analysis-stat">️ ${a.risks?.length || 0} risico's</span>
+                        <span class="analysis-stat">⚠️ ${a.risks?.length || 0} risico's</span>
                         <span class="analysis-stat">👥 ${a.parties_involved?.length || 0} partijen</span>
-                        <span class="analysis-stat">️ ${(a.time_saved_hours || 0).toFixed(1)}u bespaard</span>
+                        <span class="analysis-stat">⏱️ ${(a.time_saved_hours || 0).toFixed(1)}u bespaard</span>
                         <span class="analysis-stat">${a.sentiment_score >= 0.7 ? '😊' : a.sentiment_score >= 0.4 ? '😐' : '😟'} ${(a.sentiment_score * 100).toFixed(0)}%</span>
                     </div>
                 </div>
@@ -1264,7 +1360,7 @@
                 </div>
                 
                 <div class="result-section">
-                    <h4> Samenvatting</h4>
+                    <h4>📝 Samenvatting</h4>
                     <p style="line-height: 1.6;">${analysis.summary}</p>
                 </div>
                 
@@ -1279,7 +1375,7 @@
                 
                 ${analysis.risks && analysis.risks.length > 0 ? `
                     <div class="result-section">
-                        <h4>⚠️ Risico's (${analysis.risks.length})</h4>
+                        <h4>️ Risico's (${analysis.risks.length})</h4>
                         ${analysis.risks.map(r => `
                             <div class="risk-item">
                                 <span class="severity-badge severity-${r.severity.toLowerCase()}">${r.severity}</span>
@@ -1547,7 +1643,7 @@
             
             let html = `
                 <div style="background: linear-gradient(135deg, #51cf66 0%, #40c057 100%); color: white; padding: 16px; border-radius: 8px; text-align: center; margin-bottom: 24px; font-weight: 600;">
-                    ️ Tijdbesparing: ${result.time_saved_hours || 0} uur handmatig werk
+                    ⏱️ Tijdbesparing: ${result.time_saved_hours || 0} uur handmatig werk
                 </div>
                 
                 <div class="result-section">
@@ -1558,7 +1654,7 @@
                 </div>
                 
                 <div class="result-section">
-                    <h4>📝 Samenvatting</h4>
+                    <h4> Samenvatting</h4>
                     <p style="line-height: 1.6;">${result.summary}</p>
                 </div>
                 
@@ -1574,7 +1670,7 @@
                 </div>
                 
                 <div class="result-section">
-                    <h4>📅 Belangrijke Data</h4>
+                    <h4> Belangrijke Data</h4>
                     <div style="display: flex; flex-direction: column; gap: 8px;">
                         ${Object.entries(result.key_dates || {}).map(([k, v]) => `
                             <div style="padding: 10px; background: var(--bg); border-radius: 6px;">
@@ -1594,7 +1690,7 @@
                                 <span class="severity-badge severity-${r.severity.toLowerCase()}">${r.severity}</span>
                                 <h5 style="margin: 8px 0;">${r.clause_type}</h5>
                                 <p><strong>📋 Beschrijving:</strong> ${r.description}</p>
-                                ${r.clause_quote ? `<div style="background: #fff3cd; padding: 10px; border-left: 3px solid #ffc107; font-style: italic; margin: 10px 0; border-radius: 4px;"><strong> Citaat:</strong><br>"${r.clause_quote}"</div>` : ''}
+                                ${r.clause_quote ? `<div style="background: #fff3cd; padding: 10px; border-left: 3px solid #ffc107; font-style: italic; margin: 10px 0; border-radius: 4px;"><strong>💬 Citaat:</strong><br>"${r.clause_quote}"</div>` : ''}
                                 ${r.legal_reference ? `<div class="legal-ref" onclick="openRefSidebar('${r.legal_reference}')">️ ${r.legal_reference} (klik voor details)</div>` : ''}
                                 <p><strong>💡 Advies:</strong> ${r.recommendation}</p>
                             </div>
@@ -1606,7 +1702,7 @@
             if (result.action_plan && (result.action_plan.direct?.length || result.action_plan.short_term?.length || result.action_plan.long_term?.length)) {
                 html += `
                     <div class="result-section">
-                        <h4>📋 Strategisch Actieplan</h4>
+                        <h4> Strategisch Actieplan</h4>
                         ${result.action_plan.direct?.length ? `
                             <div style="background: var(--bg); padding: 16px; border-radius: 8px; margin-bottom: 12px;">
                                 <h5 style="color: var(--danger); margin-bottom: 8px;">🔴 Direct (deze week)</h5>
@@ -1617,7 +1713,7 @@
                         ` : ''}
                         ${result.action_plan.short_term?.length ? `
                             <div style="background: var(--bg); padding: 16px; border-radius: 8px; margin-bottom: 12px;">
-                                <h5 style="color: #ff922b; margin-bottom: 8px;"> Korte termijn (deze maand)</h5>
+                                <h5 style="color: #ff922b; margin-bottom: 8px;">🟡 Korte termijn (deze maand)</h5>
                                 <ul style="list-style: none; padding: 0;">
                                     ${result.action_plan.short_term.map(a => `<li style="padding: 6px 0;">□ ${a}</li>`).join('')}
                                 </ul>
@@ -1643,11 +1739,11 @@
                             <p><strong>Jouw positie:</strong> ${result.negotiation_strategy.your_position}</p>
                             <p><strong>Tegenpartij:</strong> ${result.negotiation_strategy.counterparty_position}</p>
                             ${result.negotiation_strategy.arguments?.length ? `
-                                <h5 style="margin-top: 12px;">💪 Argumenten:</h5>
+                                <h5 style="margin-top: 12px;"> Argumenten:</h5>
                                 <ul>${result.negotiation_strategy.arguments.map(a => `<li>✓ ${a}</li>`).join('')}</ul>
                             ` : ''}
                             ${result.negotiation_strategy.fallback ? `
-                                <h5 style="margin-top: 12px;">🛡️ Fallback:</h5>
+                                <h5 style="margin-top: 12px;">️ Fallback:</h5>
                                 <p>${result.negotiation_strategy.fallback}</p>
                             ` : ''}
                         </div>
@@ -1696,7 +1792,7 @@
             const title = document.getElementById('ref-title');
             const subtitle = document.getElementById('ref-subtitle');
             
-            title.textContent = ' Laden...';
+            title.textContent = '️ Laden...';
             subtitle.textContent = 'Even geduld';
             content.innerHTML = '<div class="loading active"><div class="spinner"></div></div>';
             
@@ -1771,7 +1867,7 @@
                 content.innerHTML = html;
                 
             } catch (error) {
-                content.innerHTML = `<div style="background: #fff5f5; padding: 16px; border-radius: 8px; color: var(--danger);">️ ${error.message}</div>`;
+                content.innerHTML = `<div style="background: #fff5f5; padding: 16px; border-radius: 8px; color: var(--danger);">⚠️ ${error.message}</div>`;
             }
         }
         
