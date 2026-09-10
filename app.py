@@ -1,33 +1,129 @@
 """
-LegalLens Intelligence API v7.0.0
-AI-powered legal analysis with hybrid search (database + live)
+LegalLens Pro API v9.0
+Robuuste backend met database, file storage, en alle features
 """
 
-from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, Form
-from fastapi.responses import HTMLResponse, FileResponse
-from fastapi.staticfiles import StaticFiles
-from fastapi.security import APIKeyHeader
-from pydantic import BaseModel
-from typing import List, Literal, Dict, Optional, Any
-import shutil
 import os
-import uuid
-import json
 import re
+import json
+import uuid
+import shutil
+import logging
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import List, Dict, Optional, Any
+
 import requests
 from dotenv import load_dotenv
+from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, Form, Request
+from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.security import APIKeyHeader
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field
+import uvicorn
 
 # Laad environment variabelen
 load_dotenv()
 
-# --- FastAPI App Initialisatie ---
+# Configureer logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# --- Database Setup (SQLite) ---
+import sqlite3
+
+DB_PATH = Path("legallens.db")
+
+def init_db():
+    """Initialiseer SQLite database"""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
+    # Dossiers tabel
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS dossiers (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            client TEXT,
+            type TEXT,
+            status TEXT DEFAULT 'active',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    
+    # Bestanden tabel
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS files (
+            id TEXT PRIMARY KEY,
+            dossier_id TEXT NOT NULL,
+            filename TEXT NOT NULL,
+            original_name TEXT NOT NULL,
+            size INTEGER,
+            uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (dossier_id) REFERENCES dossiers(id) ON DELETE CASCADE
+        )
+    ''')
+    
+    # Analyses tabel
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS analyses (
+            id TEXT PRIMARY KEY,
+            dossier_id TEXT,
+            document_type TEXT,
+            summary TEXT,
+            parties_involved TEXT,
+            key_dates TEXT,
+            risks TEXT,
+            overall_advice TEXT,
+            sentiment_score REAL,
+            action_plan TEXT,
+            negotiation_strategy TEXT,
+            due_diligence_findings TEXT,
+            time_saved_hours REAL,
+            mode TEXT DEFAULT 'standard',
+            analysis_type TEXT DEFAULT 'contract',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (dossier_id) REFERENCES dossiers(id) ON DELETE SET NULL
+        )
+    ''')
+    
+    conn.commit()
+    conn.close()
+    logger.info("Database initialized")
+
+# Initialiseer database bij startup
+init_db()
+
+def get_db():
+    """Database connection helper"""
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+# --- FastAPI App ---
 app = FastAPI(
-    title="LegalLens Intelligence API",
-    description="Professionele AI juridische analyse met live wetgeving en jurisprudentie",
-    version="7.0.0"
+    title="LegalLens Pro API",
+    description="Professionele AI juridische analyse platform",
+    version="9.0.0",
+    docs_url="/api/docs",
+    redoc_url="/api/redoc"
 )
 
-# Serve statische bestanden (frontend)
+# CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Mount statische bestanden
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # --- Configuratie ---
@@ -40,7 +136,11 @@ HF_API_TOKEN = os.getenv("HF_API_TOKEN")
 TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
 VALID_API_KEYS = os.getenv("VALID_API_KEYS", "demo-key,test-key").split(",")
 
-# --- Pydantic Models (voor API validatie) ---
+# File storage directory
+UPLOAD_DIR = Path("uploads")
+UPLOAD_DIR.mkdir(exist_ok=True)
+
+# --- Pydantic Models ---
 class RiskItem(BaseModel):
     clause_type: str
     severity: str
@@ -68,19 +168,30 @@ class AnalysisResult(BaseModel):
     overall_advice: str
     sentiment_score: float
     action_plan: Dict[str, List[str]] = {}
-    negotiation_strategy: Dict[str, Any] = {}  # ✅ Hoofdletter A
+    negotiation_strategy: Dict[str, Any] = {}
     due_diligence_findings: List[DueDiligenceFinding] = []
     time_saved_hours: float = 0
 
 class TextAnalysisRequest(BaseModel):
     text: str
-    mode: Literal["standard", "advocaat"] = "standard"
+    mode: str = "standard"
     analysis_type: str = "contract"
 
 class LegalArticleRequest(BaseModel):
     article: str
 
-# --- Wettekst Database (17 meest gebruikte artikelen) ---
+class DossierCreate(BaseModel):
+    name: str
+    client: Optional[str] = None
+    type: Optional[str] = None
+
+class DossierUpdate(BaseModel):
+    name: Optional[str] = None
+    client: Optional[str] = None
+    type: Optional[str] = None
+    status: Optional[str] = None
+
+# --- Wettekst Database ---
 LEGAL_DATABASE: Dict[str, Dict] = {
     "1:94 BW": {
         "title": "Goederen van de gemeenschap",
@@ -214,7 +325,7 @@ JURISPRUDENCE_DATABASE: Dict[str, List[Dict]] = {
 
 # --- Helper Functies ---
 def normalize_article(article: str) -> str:
-    """Normaliseer artikel naam (bijv. 'Art. 1:94 BW' -> '1:94 BW')"""
+    """Normaliseer artikel naam"""
     article = re.sub(r'^Art\.\s*', '', article, flags=re.IGNORECASE)
     article = re.sub(r'^Artikel\s*', '', article, flags=re.IGNORECASE)
     article = ' '.join(article.split())
@@ -223,20 +334,20 @@ def normalize_article(article: str) -> str:
     return article
 
 async def verify_api_key(api_key: str = Depends(api_key_header)) -> str:
-    """Verifieer API key (optioneel)"""
+    """Verifieer API key"""
     if api_key and api_key not in VALID_API_KEYS:
         raise HTTPException(status_code=403, detail="Invalid API Key")
     return api_key or "public"
 
-# --- Live Search Engine (Tavily) ---
+# --- Live Search Engine ---
 class LiveLegalSearch:
-    """Zoekmachine voor live wettekst en jurisprudentie via Tavily API"""
+    """Zoekmachine voor live wettekst en jurisprudentie"""
     
     def __init__(self):
         self.api_key = TAVILY_API_KEY
         self.available = bool(self.api_key)
         if not self.available:
-            print("️ Tavily API key niet gevonden - alleen database beschikbaar")
+            logger.warning("Tavily API key niet gevonden - alleen database beschikbaar")
 
     async def search_bw_text(self, article: str) -> str:
         """Zoek wettekst op via Tavily"""
@@ -267,7 +378,7 @@ class LiveLegalSearch:
             return "Wettekst niet gevonden"
             
         except Exception as e:
-            print(f"Tavily search error: {e}")
+            logger.error(f"Tavily search error: {e}")
             return "Fout bij ophalen wettekst"
 
     async def search_case_law(self, article: str) -> List[Dict]:
@@ -306,21 +417,22 @@ class LiveLegalSearch:
             return cases
             
         except Exception as e:
-            print(f"Case law search error: {e}")
+            logger.error(f"Case law search error: {e}")
             return []
 
-# Initialiseer search engine
 live_search = LiveLegalSearch()
 
 # --- AI Analyzer ---
 class AIAnalyzer:
-    """Hoofdklasse voor AI analyse en juridisch commentaar"""
+    """Hoofdklasse voor AI analyse"""
     
     def __init__(self):
         self.provider = AI_PROVIDER
     
     async def analyze_text(self, text: str, mode: str = "standard", analysis_type: str = "contract") -> Dict:
         """Analyseer juridische tekst"""
+        logger.info(f"Analyzing text with mode={mode}, type={analysis_type}")
+        
         if self.provider == "openai":
             return await self._analyze_with_openai(text, mode, analysis_type)
         elif self.provider == "huggingface":
@@ -328,20 +440,17 @@ class AIAnalyzer:
         return self._generate_mock_response(text)
     
     async def get_legal_commentary(self, article: str) -> Dict:
-        """Haal wettekst + jurisprudentie op en genereer AI commentaar"""
-        print(f"🔍 Zoek artikel: {article}")
+        """Haal wettekst + AI commentaar op"""
+        logger.info(f"Looking up article: {article}")
         
-        # 1. Haal data op (database + live search)
         bw_text = await self._get_bw_text(article)
         case_law = await self._get_case_law(article)
         
-        # 2. Haal database info
         db_entry = LEGAL_DATABASE.get(article, {})
         title = db_entry.get("title", f"Artikel {article}")
         related = db_entry.get("related", [])
         history = db_entry.get("history", [])
         
-        # 3. Genereer AI commentaar
         commentary = await self._generate_commentary(article, title, bw_text)
         
         return {
@@ -355,25 +464,19 @@ class AIAnalyzer:
         }
     
     async def _get_bw_text(self, article: str) -> str:
-        """Haal wettekst op (eerst database, dan live)"""
-        # Check database eerst
+        """Haal wettekst op"""
         if article in LEGAL_DATABASE:
             return LEGAL_DATABASE[article]["text"]
-        
-        # Live search als niet in database
         return await live_search.search_bw_text(article)
     
     async def _get_case_law(self, article: str) -> List[Dict]:
-        """Haal jurisprudentie op (eerst database, dan live)"""
-        # Check database eerst
+        """Haal jurisprudentie op"""
         if article in JURISPRUDENCE_DATABASE:
             return JURISPRUDENCE_DATABASE[article]
-        
-        # Live search als niet in database
         return await live_search.search_case_law(article)
     
     async def _generate_commentary(self, article: str, title: str, bw_text: str) -> str:
-        """Genereer AI juridisch commentaar"""
+        """Genereer AI commentaar"""
         try:
             headers = {
                 "Authorization": f"Bearer {OPENAI_API_KEY}",
@@ -416,11 +519,11 @@ Geef ALLEEN de uitleg, geen inleiding."""
             return result["choices"][0]["message"]["content"]
             
         except Exception as e:
-            print(f"AI commentary error: {e}")
+            logger.error(f"AI commentary error: {e}")
             return "AI commentaar niet beschikbaar. Raadpleeg een juridische database."
     
     async def _analyze_with_openai(self, text: str, mode: str, analysis_type: str) -> Dict:
-        """Analyseer tekst met OpenAI GPT-4o-mini"""
+        """Analyseer met OpenAI"""
         try:
             headers = {
                 "Authorization": f"Bearer {OPENAI_API_KEY}",
@@ -453,18 +556,17 @@ Geef ALLEEN de uitleg, geen inleiding."""
             content = result["choices"][0]["message"]["content"]
             parsed = json.loads(content)
             
-            # Voeg tijdbesparing toe
             word_count = len(text.split())
             parsed["time_saved_hours"] = round(word_count / 500 * 0.5, 1)
             
             return parsed
             
         except Exception as e:
-            print(f"OpenAI error: {e}")
+            logger.error(f"OpenAI error: {e}")
             return self._generate_mock_response(text)
     
     def _get_system_prompt(self, mode: str) -> str:
-        """Krijg system prompt op basis van modus"""
+        """Krijg system prompt"""
         if mode == "advocaat":
             return """Je bent een ervaren Nederlandse advocaat met 20 jaar praktijkervaring.
 Je analyseert documenten grondig, citeert specifieke wetsartikelen en jurisprudentie,
@@ -490,7 +592,7 @@ BELANGRIJKE REGELS:
 5. Wees specifiek in je adviezen"""
     
     def _get_user_prompt(self, text: str, analysis_type: str) -> str:
-        """Krijg user prompt voor analyse"""
+        """Krijg user prompt"""
         return f"""Analyseer het volgende juridische document:
 
 === DOCUMENT ===
@@ -533,7 +635,7 @@ Geef een JSON response met deze EXACTE structuur:
 BELANGRIJK: Geef ALLEEN de JSON, geen andere tekst"""
     
     async def _analyze_with_huggingface(self, text: str, mode: str, analysis_type: str) -> Dict:
-        """Analyseer tekst met HuggingFace (fallback)"""
+        """Analyseer met HuggingFace"""
         try:
             API_URL = "https://api-inference.huggingface.co/models/meta-llama/Llama-3.2-3B-Instruct"
             headers = {"Authorization": f"Bearer {HF_API_TOKEN}"}
@@ -560,12 +662,12 @@ Geef JSON met: summary, contract_type, parties_involved, key_dates, risks, overa
                 return parsed
                 
         except Exception as e:
-            print(f"HuggingFace error: {e}")
+            logger.error(f"HuggingFace error: {e}")
         
         return self._generate_mock_response(text)
     
     def _generate_mock_response(self, text: str) -> Dict:
-        """Genereer mock response (fallback)"""
+        """Genereer mock response"""
         return {
             "summary": f"Analyse van {len(text)} tekens",
             "contract_type": "Onbekend",
@@ -580,72 +682,270 @@ Geef JSON met: summary, contract_type, parties_involved, key_dates, risks, overa
             "time_saved_hours": 0
         }
 
-# Initialiseer analyzer
 analyzer = AIAnalyzer()
 
 # --- API Endpoints ---
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root():
-    """Serve de frontend"""
+    """Serve frontend"""
     return FileResponse("static/index.html")
-
-@app.get("/advocaten", response_class=HTMLResponse)
-async def advocaten_page():
-    """Serve advocaten landing page"""
-    return FileResponse("static/advocaten.html")
 
 @app.get("/health")
 def health_check():
-    """Health check endpoint"""
+    """Health check"""
     return {
         "status": "healthy",
         "provider": AI_PROVIDER,
         "tavily_available": live_search.available,
-        "version": "7.0.0"
+        "version": "9.0.0",
+        "database": "connected" if DB_PATH.exists() else "not connected"
     }
 
-@app.get("/api/legal-articles")
-def get_legal_articles():
-    """Lijst van beschikbare wetsartikelen in database"""
-    return {
-        "database_articles": list(LEGAL_DATABASE.keys()),
-        "live_search_available": live_search.available
-    }
+# --- Dossier Endpoints ---
 
-@app.post("/api/legal-commentary")
-async def get_legal_commentary(
-    request: LegalArticleRequest,
+@app.post("/api/dossiers")
+async def create_dossier(
+    dossier: DossierCreate,
     api_key: str = Depends(verify_api_key)
 ):
-    """Haal wettekst + AI commentaar + jurisprudentie op"""
-    article = normalize_article(request.article.strip())
+    """Maak nieuw dossier aan"""
+    dossier_id = str(uuid.uuid4())
     
-    try:
-        result = await analyzer.get_legal_commentary(article)
-        return result
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO dossiers (id, name, client, type) VALUES (?, ?, ?, ?)",
+        (dossier_id, dossier.name, dossier.client, dossier.type)
+    )
+    conn.commit()
+    conn.close()
+    
+    logger.info(f"Dossier created: {dossier_id}")
+    
+    return {
+        "id": dossier_id,
+        "name": dossier.name,
+        "client": dossier.client,
+        "type": dossier.type,
+        "status": "active",
+        "created_at": datetime.now().isoformat()
+    }
+
+@app.get("/api/dossiers")
+async def list_dossiers(
+    api_key: str = Depends(verify_api_key)
+):
+    """Haal alle dossiers op"""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM dossiers ORDER BY created_at DESC")
+    dossiers = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    
+    return {"dossiers": dossiers, "total": len(dossiers)}
+
+@app.get("/api/dossiers/{dossier_id}")
+async def get_dossier(
+    dossier_id: str,
+    api_key: str = Depends(verify_api_key)
+):
+    """Haal dossier details op"""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM dossiers WHERE id = ?", (dossier_id,))
+    dossier = cursor.fetchone()
+    
+    if not dossier:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Dossier niet gevonden")
+    
+    # Haal bestanden op
+    cursor.execute("SELECT * FROM files WHERE dossier_id = ?", (dossier_id,))
+    files = [dict(row) for row in cursor.fetchall()]
+    
+    # Haal analyses op
+    cursor.execute("SELECT * FROM analyses WHERE dossier_id = ?", (dossier_id,))
+    analyses = [dict(row) for row in cursor.fetchall()]
+    
+    conn.close()
+    
+    return {
+        **dict(dossier),
+        "files": files,
+        "analyses": analyses
+    }
+
+@app.put("/api/dossiers/{dossier_id}")
+async def update_dossier(
+    dossier_id: str,
+    dossier: DossierUpdate,
+    api_key: str = Depends(verify_api_key)
+):
+    """Update dossier"""
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    updates = []
+    params = []
+    
+    if dossier.name:
+        updates.append("name = ?")
+        params.append(dossier.name)
+    if dossier.client:
+        updates.append("client = ?")
+        params.append(dossier.client)
+    if dossier.type:
+        updates.append("type = ?")
+        params.append(dossier.type)
+    if dossier.status:
+        updates.append("status = ?")
+        params.append(dossier.status)
+    
+    updates.append("updated_at = ?")
+    params.append(datetime.now().isoformat())
+    params.append(dossier_id)
+    
+    cursor.execute(f"UPDATE dossiers SET {', '.join(updates)} WHERE id = ?", params)
+    conn.commit()
+    conn.close()
+    
+    return {"message": "Dossier updated"}
+
+@app.delete("/api/dossiers/{dossier_id}")
+async def delete_dossier(
+    dossier_id: str,
+    api_key: str = Depends(verify_api_key)
+):
+    """Verwijder dossier"""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM dossiers WHERE id = ?", (dossier_id,))
+    conn.commit()
+    conn.close()
+    
+    logger.info(f"Dossier deleted: {dossier_id}")
+    
+    return {"message": "Dossier deleted"}
+
+# --- File Upload Endpoints ---
+
+@app.post("/api/dossiers/{dossier_id}/files")
+async def upload_file_to_dossier(
+    dossier_id: str,
+    file: UploadFile = File(...),
+    api_key: str = Depends(verify_api_key)
+):
+    """Upload bestand naar dossier"""
+    # Check if dossier exists
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM dossiers WHERE id = ?", (dossier_id,))
+    if not cursor.fetchone():
+        conn.close()
+        raise HTTPException(status_code=404, detail="Dossier niet gevonden")
+    
+    # Save file
+    file_id = str(uuid.uuid4())
+    file_ext = Path(file.filename).suffix
+    saved_filename = f"{file_id}{file_ext}"
+    file_path = UPLOAD_DIR / saved_filename
+    
+    with open(file_path, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+    
+    # Save to database
+    cursor.execute(
+        "INSERT INTO files (id, dossier_id, filename, original_name, size) VALUES (?, ?, ?, ?, ?)",
+        (file_id, dossier_id, saved_filename, file.filename, file.size)
+    )
+    conn.commit()
+    conn.close()
+    
+    logger.info(f"File uploaded: {file_id} to dossier {dossier_id}")
+    
+    return {
+        "id": file_id,
+        "filename": saved_filename,
+        "original_name": file.filename,
+        "size": file.size,
+        "uploaded_at": datetime.now().isoformat()
+    }
+
+@app.get("/api/dossiers/{dossier_id}/files")
+async def list_dossier_files(
+    dossier_id: str,
+    api_key: str = Depends(verify_api_key)
+):
+    """Haal alle bestanden van een dossier op"""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM files WHERE dossier_id = ? ORDER BY uploaded_at DESC", (dossier_id,))
+    files = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    
+    return {"files": files, "total": len(files)}
+
+# --- Analyse Endpoints ---
 
 @app.post("/api/analyze-text", response_model=AnalysisResult)
 async def analyze_text(
     request: TextAnalysisRequest,
+    dossier_id: Optional[str] = None,
     api_key: str = Depends(verify_api_key)
 ):
-    """Analyseer tekst direct"""
+    """Analyseer tekst"""
     text = request.text
     if not text or len(text.strip()) < 50:
         raise HTTPException(status_code=400, detail="Text too short (min 50 characters)")
     
     try:
         result = await analyzer.analyze_text(text, request.mode, request.analysis_type)
-        return AnalysisResult(document_id=str(uuid.uuid4()), **result)
+        
+        # Save to database
+        analysis_id = str(uuid.uuid4())
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute(
+            """INSERT INTO analyses 
+            (id, dossier_id, document_type, summary, parties_involved, key_dates, 
+             risks, overall_advice, sentiment_score, action_plan, negotiation_strategy,
+             due_diligence_findings, time_saved_hours, mode, analysis_type)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                analysis_id,
+                dossier_id,
+                result.get("contract_type", ""),
+                result.get("summary", ""),
+                json.dumps(result.get("parties_involved", [])),
+                json.dumps(result.get("key_dates", {})),
+                json.dumps(result.get("risks", [])),
+                result.get("overall_advice", ""),
+                result.get("sentiment_score", 0.5),
+                json.dumps(result.get("action_plan", {})),
+                json.dumps(result.get("negotiation_strategy", {})),
+                json.dumps(result.get("due_diligence_findings", [])),
+                result.get("time_saved_hours", 0),
+                request.mode,
+                request.analysis_type
+            )
+        )
+        conn.commit()
+        conn.close()
+        
+        result["document_id"] = analysis_id
+        logger.info(f"Analysis completed: {analysis_id}")
+        
+        return AnalysisResult(**result)
+        
     except Exception as e:
+        logger.error(f"Analysis failed: {e}")
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
 
 @app.post("/api/analyze-file", response_model=AnalysisResult)
 async def analyze_file(
     file: UploadFile = File(...),
+    dossier_id: Optional[str] = Form(None),
     mode: str = Form("standard"),
     analysis_type: str = Form("contract"),
     api_key: str = Depends(verify_api_key)
@@ -654,19 +954,24 @@ async def analyze_file(
     if not file.filename.endswith(('.pdf', '.docx', '.txt')):
         raise HTTPException(status_code=400, detail="Only PDF, DOCX, and TXT files supported")
     
-    file_location = f"temp_{uuid.uuid4()}_{file.filename}"
-    with open(file_location, "wb+") as file_object:
+    # Save file temporarily
+    file_id = str(uuid.uuid4())
+    file_ext = Path(file.filename).suffix
+    temp_path = UPLOAD_DIR / f"temp_{file_id}{file_ext}"
+    
+    with open(temp_path, "wb+") as file_object:
         shutil.copyfileobj(file.file, file_object)
     
     try:
+        # Extract text
         text = ""
         if file.filename.endswith('.txt'):
-            with open(file_location, 'r', encoding='utf-8') as f:
+            with open(temp_path, 'r', encoding='utf-8') as f:
                 text = f.read()
         elif file.filename.endswith('.pdf'):
             try:
                 import PyPDF2
-                with open(file_location, 'rb') as f:
+                with open(temp_path, 'rb') as f:
                     reader = PyPDF2.PdfReader(f)
                     text = "\n".join([page.extract_text() for page in reader.pages if page.extract_text()])
             except ImportError:
@@ -677,25 +982,203 @@ async def analyze_file(
         if not text or len(text.strip()) < 50:
             raise HTTPException(status_code=400, detail="Could not extract enough text")
         
+        # Analyze
         result = await analyzer.analyze_text(text, mode, analysis_type)
-        return AnalysisResult(document_id=str(uuid.uuid4()), **result)
+        
+        # Save analysis to database
+        analysis_id = str(uuid.uuid4())
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute(
+            """INSERT INTO analyses 
+            (id, dossier_id, document_type, summary, parties_involved, key_dates, 
+             risks, overall_advice, sentiment_score, action_plan, negotiation_strategy,
+             due_diligence_findings, time_saved_hours, mode, analysis_type)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                analysis_id,
+                dossier_id,
+                result.get("contract_type", ""),
+                result.get("summary", ""),
+                json.dumps(result.get("parties_involved", [])),
+                json.dumps(result.get("key_dates", {})),
+                json.dumps(result.get("risks", [])),
+                result.get("overall_advice", ""),
+                result.get("sentiment_score", 0.5),
+                json.dumps(result.get("action_plan", {})),
+                json.dumps(result.get("negotiation_strategy", {})),
+                json.dumps(result.get("due_diligence_findings", [])),
+                result.get("time_saved_hours", 0),
+                mode,
+                analysis_type
+            )
+        )
+        
+        # Save file to database if dossier_id provided
+        if dossier_id:
+            saved_filename = f"{file_id}{file_ext}"
+            final_path = UPLOAD_DIR / saved_filename
+            temp_path.rename(final_path)
+            
+            cursor.execute(
+                "INSERT INTO files (id, dossier_id, filename, original_name, size) VALUES (?, ?, ?, ?, ?)",
+                (file_id, dossier_id, saved_filename, file.filename, file.size)
+            )
+        else:
+            temp_path.unlink()
+        
+        conn.commit()
+        conn.close()
+        
+        result["document_id"] = analysis_id
+        logger.info(f"File analysis completed: {analysis_id}")
+        
+        return AnalysisResult(**result)
+        
     except Exception as e:
+        logger.error(f"File analysis failed: {e}")
+        if temp_path.exists():
+            temp_path.unlink()
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        if os.path.exists(file_location):
-            os.remove(file_location)
 
-@app.post("/api/export-report")
-async def export_report(
-    analysis_data: dict,
-    format: str = "pdf",
+@app.get("/api/analyses")
+async def list_analyses(
+    dossier_id: Optional[str] = None,
+    limit: int = 50,
+    offset: int = 0,
     api_key: str = Depends(verify_api_key)
 ):
-    """Export analyse naar PDF of Word (in ontwikkeling)"""
-    return {"message": "Export functionaliteit in ontwikkeling", "data": analysis_data}
+    """Haal analyses op"""
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    if dossier_id:
+        cursor.execute(
+            "SELECT * FROM analyses WHERE dossier_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?",
+            (dossier_id, limit, offset)
+        )
+    else:
+        cursor.execute(
+            "SELECT * FROM analyses ORDER BY created_at DESC LIMIT ? OFFSET ?",
+            (limit, offset)
+        )
+    
+    analyses = []
+    for row in cursor.fetchall():
+        analysis = dict(row)
+        # Parse JSON fields
+        for field in ['parties_involved', 'key_dates', 'risks', 'action_plan', 
+                      'negotiation_strategy', 'due_diligence_findings']:
+            if analysis.get(field):
+                try:
+                    analysis[field] = json.loads(analysis[field])
+                except:
+                    analysis[field] = []
+        analyses.append(analysis)
+    
+    conn.close()
+    
+    return {"analyses": analyses, "total": len(analyses)}
+
+@app.get("/api/analyses/{analysis_id}")
+async def get_analysis(
+    analysis_id: str,
+    api_key: str = Depends(verify_api_key)
+):
+    """Haal analyse details op"""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM analyses WHERE id = ?", (analysis_id,))
+    analysis = cursor.fetchone()
+    
+    if not analysis:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Analyse niet gevonden")
+    
+    analysis_dict = dict(analysis)
+    
+    # Parse JSON fields
+    for field in ['parties_involved', 'key_dates', 'risks', 'action_plan', 
+                  'negotiation_strategy', 'due_diligence_findings']:
+        if analysis_dict.get(field):
+            try:
+                analysis_dict[field] = json.loads(analysis_dict[field])
+            except:
+                analysis_dict[field] = []
+    
+    conn.close()
+    
+    return analysis_dict
+
+@app.delete("/api/analyses/{analysis_id}")
+async def delete_analysis(
+    analysis_id: str,
+    api_key: str = Depends(verify_api_key)
+):
+    """Verwijder analyse"""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM analyses WHERE id = ?", (analysis_id,))
+    conn.commit()
+    conn.close()
+    
+    logger.info(f"Analysis deleted: {analysis_id}")
+    
+    return {"message": "Analyse verwijderd"}
+
+# --- Legal Commentary Endpoint ---
+
+@app.post("/api/legal-commentary")
+async def get_legal_commentary(
+    request: LegalArticleRequest,
+    api_key: str = Depends(verify_api_key)
+):
+    """Haal wettekst + AI commentaar op"""
+    article = normalize_article(request.article.strip())
+    
+    try:
+        result = await analyzer.get_legal_commentary(article)
+        return result
+    except Exception as e:
+        logger.error(f"Legal commentary error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/legal-articles")
+def get_legal_articles():
+    """Lijst van beschikbare wetsartikelen"""
+    return {
+        "database_articles": list(LEGAL_DATABASE.keys()),
+        "live_search_available": live_search.available
+    }
+
+# --- Statistics Endpoint ---
+
+@app.get("/api/statistics")
+async def get_statistics(
+    api_key: str = Depends(verify_api_key)
+):
+    """Haal statistieken op"""
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT COUNT(*) as count FROM dossiers WHERE status = 'active'")
+    active_dossiers = cursor.fetchone()['count']
+    
+    cursor.execute("SELECT COUNT(*) as count FROM analyses")
+    total_analyses = cursor.fetchone()['count']
+    
+    cursor.execute("SELECT SUM(time_saved_hours) as total FROM analyses")
+    total_hours = cursor.fetchone()['total'] or 0
+    
+    conn.close()
+    
+    return {
+        "active_dossiers": active_dossiers,
+        "total_analyses": total_analyses,
+        "total_hours_saved": round(total_hours, 1)
+    }
 
 # --- Start Server ---
 if __name__ == "__main__":
-    import uvicorn
     port = int(os.getenv("PORT", 7860))
     uvicorn.run(app, host="0.0.0.0", port=port)
