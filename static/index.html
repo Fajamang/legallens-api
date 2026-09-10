@@ -29,13 +29,8 @@
             line-height: 1.6;
         }
         
-        /* Layout */
-        .app-container {
-            display: flex;
-            min-height: 100vh;
-        }
+        .app-container { display: flex; min-height: 100vh; }
         
-        /* Sidebar */
         .sidebar {
             width: 260px;
             background: var(--sidebar-bg);
@@ -43,7 +38,6 @@
             position: fixed;
             height: 100vh;
             overflow-y: auto;
-            transition: all 0.3s;
             z-index: 100;
         }
         
@@ -64,16 +58,12 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             padding: 4px 10px;
             border-radius: 6px;
-            font-size: 0.7em;
+            font-size: 0.6em;
         }
         
-        .sidebar-nav {
-            padding: 16px 0;
-        }
+        .sidebar-nav { padding: 16px 0; }
         
-        .nav-section {
-            margin-bottom: 16px;
-        }
+        .nav-section { margin-bottom: 16px; }
         
         .nav-section-title {
             padding: 8px 24px;
@@ -95,10 +85,7 @@
             color: rgba(255,255,255,0.7);
         }
         
-        .nav-item:hover {
-            background: rgba(255,255,255,0.05);
-            color: white;
-        }
+        .nav-item:hover { background: rgba(255,255,255,0.05); color: white; }
         
         .nav-item.active {
             background: rgba(102, 126, 234, 0.15);
@@ -106,11 +93,7 @@
             color: white;
         }
         
-        .nav-item .icon {
-            font-size: 1.2em;
-            width: 24px;
-            text-align: center;
-        }
+        .nav-item .icon { font-size: 1.2em; width: 24px; text-align: center; }
         
         .sidebar-footer {
             padding: 16px 24px;
@@ -119,14 +102,8 @@
             color: rgba(255,255,255,0.5);
         }
         
-        /* Main Content */
-        .main-content {
-            margin-left: 260px;
-            flex: 1;
-            min-height: 100vh;
-        }
+        .main-content { margin-left: 260px; flex: 1; min-height: 100vh; }
         
-        /* Top Bar */
         .topbar {
             background: white;
             padding: 16px 32px;
@@ -139,17 +116,9 @@
             z-index: 50;
         }
         
-        .topbar-title {
-            font-size: 1.3em;
-            font-weight: 600;
-            color: var(--text);
-        }
+        .topbar-title { font-size: 1.3em; font-weight: 600; color: var(--text); }
         
-        .topbar-actions {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-        }
+        .topbar-actions { display: flex; gap: 12px; align-items: center; }
         
         .user-badge {
             display: flex;
@@ -174,20 +143,11 @@
             font-size: 0.85em;
         }
         
-        /* Content Area */
-        .content-area {
-            padding: 32px;
-        }
+        .content-area { padding: 32px; }
         
-        .view {
-            display: none;
-        }
+        .view { display: none; }
+        .view.active { display: block; }
         
-        .view.active {
-            display: block;
-        }
-        
-        /* Dashboard Cards */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -215,19 +175,10 @@
             letter-spacing: 0.5px;
         }
         
-        .stat-value {
-            font-size: 2em;
-            font-weight: 700;
-            color: var(--text);
-        }
+        .stat-value { font-size: 2em; font-weight: 700; color: var(--text); }
         
-        .stat-change {
-            font-size: 0.85em;
-            color: var(--success);
-            margin-top: 4px;
-        }
+        .stat-change { font-size: 0.85em; color: var(--success); margin-top: 4px; }
         
-        /* Section Cards */
         .section-card {
             background: white;
             border-radius: 12px;
@@ -245,13 +196,8 @@
             border-bottom: 1px solid var(--border);
         }
         
-        .section-title {
-            font-size: 1.2em;
-            font-weight: 600;
-            color: var(--text);
-        }
+        .section-title { font-size: 1.2em; font-weight: 600; color: var(--text); }
         
-        /* Buttons */
         .btn {
             padding: 10px 20px;
             border: none;
@@ -281,21 +227,11 @@
             border: 1px solid var(--border);
         }
         
-        .btn-secondary:hover {
-            background: var(--border);
-        }
+        .btn-secondary:hover { background: var(--border); }
         
-        .btn-danger {
-            background: var(--danger);
-            color: white;
-        }
+        .btn-sm { padding: 6px 12px; font-size: 0.85em; }
         
-        /* Dossiers List */
-        .dossier-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
+        .dossier-list { display: flex; flex-direction: column; gap: 12px; }
         
         .dossier-item {
             background: var(--bg);
@@ -314,15 +250,9 @@
             transform: translateX(4px);
         }
         
-        .dossier-info h4 {
-            font-size: 1.05em;
-            margin-bottom: 4px;
-        }
+        .dossier-info h4 { font-size: 1.05em; margin-bottom: 4px; }
         
-        .dossier-meta {
-            font-size: 0.85em;
-            color: var(--text-light);
-        }
+        .dossier-meta { font-size: 0.85em; color: var(--text-light); }
         
         .dossier-status {
             padding: 4px 12px;
@@ -335,7 +265,37 @@
         .status-pending { background: #fff3cd; color: #856404; }
         .status-closed { background: #e2e8f0; color: #718096; }
         
-        /* Analysis Form */
+        .file-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        
+        .file-item {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid var(--border);
+        }
+        
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .file-icon {
+            font-size: 1.5em;
+        }
+        
+        .file-name { font-weight: 600; }
+        
+        .file-size { font-size: 0.85em; color: var(--text-light); }
+        
         .analysis-form {
             background: white;
             border-radius: 12px;
@@ -343,9 +303,7 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.06);
         }
         
-        .form-group {
-            margin-bottom: 20px;
-        }
+        .form-group { margin-bottom: 20px; }
         
         .form-group label {
             display: block;
@@ -373,23 +331,9 @@
             border-color: var(--accent);
         }
         
-        .form-group textarea {
-            min-height: 200px;
-            resize: vertical;
-        }
+        .form-group textarea { min-height: 200px; resize: vertical; }
         
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-        }
-        
-        /* Mode Selector */
-        .mode-selector {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 24px;
-        }
+        .mode-selector { display: flex; gap: 12px; margin-bottom: 24px; }
         
         .mode-btn {
             flex: 1;
@@ -409,15 +353,8 @@
             color: white;
         }
         
-        /* Results */
-        .result-container {
-            margin-top: 24px;
-            display: none;
-        }
-        
-        .result-container.active {
-            display: block;
-        }
+        .result-container { margin-top: 24px; display: none; }
+        .result-container.active { display: block; }
         
         .result-inner {
             background: white;
@@ -427,15 +364,8 @@
             border-left: 4px solid var(--accent);
         }
         
-        .result-section {
-            margin-bottom: 24px;
-        }
-        
-        .result-section h4 {
-            color: var(--text);
-            margin-bottom: 12px;
-            font-size: 1.1em;
-        }
+        .result-section { margin-bottom: 24px; }
+        .result-section h4 { color: var(--text); margin-bottom: 12px; font-size: 1.1em; }
         
         .risk-item {
             background: var(--bg);
@@ -470,20 +400,10 @@
             font-size: 0.9em;
         }
         
-        .legal-ref:hover {
-            background: #d0e8ff;
-        }
+        .legal-ref:hover { background: #d0e8ff; }
         
-        /* Loading */
-        .loading {
-            text-align: center;
-            padding: 40px;
-            display: none;
-        }
-        
-        .loading.active {
-            display: block;
-        }
+        .loading { text-align: center; padding: 40px; display: none; }
+        .loading.active { display: block; }
         
         .spinner {
             border: 4px solid var(--border);
@@ -500,13 +420,9 @@
             100% { transform: rotate(360deg); }
         }
         
-        /* Sidebar Panel (Legal Reference) */
         .sidebar-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0,0,0,0.5);
             z-index: 999;
             opacity: 0;
@@ -514,10 +430,7 @@
             transition: all 0.3s;
         }
         
-        .sidebar-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
+        .sidebar-overlay.active { opacity: 1; visibility: visible; }
         
         .ref-sidebar {
             position: fixed;
@@ -533,9 +446,7 @@
             overflow-y: auto;
         }
         
-        .ref-sidebar.active {
-            right: 0;
-        }
+        .ref-sidebar.active { right: 0; }
         
         .ref-sidebar-header {
             background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
@@ -546,10 +457,7 @@
             z-index: 10;
         }
         
-        .ref-sidebar-header h2 {
-            font-size: 1.8em;
-            margin-bottom: 8px;
-        }
+        .ref-sidebar-header h2 { font-size: 1.8em; margin-bottom: 8px; }
         
         .ref-close {
             position: absolute;
@@ -565,13 +473,8 @@
             font-size: 1.5em;
         }
         
-        .ref-content {
-            padding: 30px;
-        }
-        
-        .ref-section {
-            margin-bottom: 24px;
-        }
+        .ref-content { padding: 30px; }
+        .ref-section { margin-bottom: 24px; }
         
         .ref-section h3 {
             color: var(--primary);
@@ -596,11 +499,7 @@
             line-height: 1.6;
         }
         
-        .ref-related {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
+        .ref-related { display: flex; flex-wrap: wrap; gap: 8px; }
         
         .ref-related-btn {
             background: var(--accent);
@@ -612,13 +511,9 @@
             font-size: 0.9em;
         }
         
-        /* Modal */
         .modal-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0,0,0,0.5);
             z-index: 1001;
             display: none;
@@ -626,24 +521,19 @@
             justify-content: center;
         }
         
-        .modal-overlay.active {
-            display: flex;
-        }
+        .modal-overlay.active { display: flex; }
         
         .modal {
             background: white;
             border-radius: 12px;
             padding: 32px;
-            max-width: 500px;
+            max-width: 600px;
             width: 90%;
             max-height: 90vh;
             overflow-y: auto;
         }
         
-        .modal h3 {
-            margin-bottom: 20px;
-            color: var(--text);
-        }
+        .modal h3 { margin-bottom: 20px; color: var(--text); }
         
         .modal-actions {
             display: flex;
@@ -652,45 +542,66 @@
             margin-top: 24px;
         }
         
-        /* Empty State */
         .empty-state {
             text-align: center;
             padding: 60px 20px;
             color: var(--text-light);
         }
         
-        .empty-state .icon {
-            font-size: 4em;
-            margin-bottom: 16px;
+        .empty-state .icon { font-size: 4em; margin-bottom: 16px; }
+        
+        .file-upload-area {
+            border: 2px dashed var(--border);
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: var(--bg);
         }
         
-        /* Responsive */
+        .file-upload-area:hover {
+            border-color: var(--accent);
+            background: #f0f4ff;
+        }
+        
+        .file-upload-area .icon { font-size: 3em; margin-bottom: 12px; }
+        
+        .file-upload-area p { color: var(--text-light); margin-bottom: 8px; }
+        
+        .file-upload-area .hint { font-size: 0.85em; color: var(--text-light); }
+        
+        .uploaded-files {
+            margin-top: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .uploaded-file {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid var(--border);
+        }
+        
         @media (max-width: 768px) {
-            .sidebar {
-                transform: translateX(-100%);
-            }
-            .sidebar.mobile-open {
-                transform: translateX(0);
-            }
-            .main-content {
-                margin-left: 0;
-            }
-            .form-row {
-                grid-template-columns: 1fr;
-            }
-            .ref-sidebar {
-                width: 100%;
-            }
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.mobile-open { transform: translateX(0); }
+            .main-content { margin-left: 0; }
+            .ref-sidebar { width: 100%; }
         }
     </style>
 </head>
 <body>
     <div class="app-container">
-        <!-- Sidebar Navigation -->
         <aside class="sidebar">
             <div class="sidebar-header">
                 <div class="sidebar-logo">
-                    ⚖️ LegalLens <span>PRO</span>
+                    ️ LegalLens <span>PRO</span>
                 </div>
             </div>
             
@@ -698,40 +609,33 @@
                 <div class="nav-section">
                     <div class="nav-section-title">Hoofdmenu</div>
                     <div class="nav-item active" onclick="showView('dashboard', this)">
-                        <span class="icon">📊</span>
-                        <span>Dashboard</span>
+                        <span class="icon"></span><span>Dashboard</span>
                     </div>
                     <div class="nav-item" onclick="showView('dossiers', this)">
-                        <span class="icon">📁</span>
-                        <span>Dossiers</span>
+                        <span class="icon">📁</span><span>Dossiers</span>
                     </div>
                     <div class="nav-item" onclick="showView('analyze', this)">
-                        <span class="icon">🔍</span>
-                        <span>Nieuwe Analyse</span>
+                        <span class="icon">🔍</span><span>Nieuwe Analyse</span>
                     </div>
                 </div>
                 
                 <div class="nav-section">
                     <div class="nav-section-title">Tools (Binnenkort)</div>
                     <div class="nav-item" onclick="showComingSoon('Document Drafter')">
-                        <span class="icon">📝</span>
-                        <span>Document Drafter</span>
+                        <span class="icon">📝</span><span>Document Drafter</span>
                     </div>
                     <div class="nav-item" onclick="showComingSoon('Tabel Module')">
-                        <span class="icon">📊</span>
-                        <span>Tabel Module</span>
+                        <span class="icon"></span><span>Tabel Module</span>
                     </div>
                     <div class="nav-item" onclick="showComingSoon('Bulk Analyse')">
-                        <span class="icon">📦</span>
-                        <span>Bulk Analyse</span>
+                        <span class="icon">📦</span><span>Bulk Analyse</span>
                     </div>
                 </div>
                 
                 <div class="nav-section">
                     <div class="nav-section-title">Account</div>
                     <div class="nav-item" onclick="showView('settings', this)">
-                        <span class="icon">⚙️</span>
-                        <span>Instellingen</span>
+                        <span class="icon">⚙️</span><span>Instellingen</span>
                     </div>
                 </div>
             </nav>
@@ -742,9 +646,7 @@
             </div>
         </aside>
         
-        <!-- Main Content -->
         <main class="main-content">
-            <!-- Top Bar -->
             <div class="topbar">
                 <div class="topbar-title" id="page-title">Dashboard</div>
                 <div class="topbar-actions">
@@ -756,7 +658,7 @@
             </div>
             
             <div class="content-area">
-                <!-- DASHBOARD VIEW -->
+                <!-- DASHBOARD -->
                 <div id="view-dashboard" class="view active">
                     <div class="stats-grid">
                         <div class="stat-card">
@@ -784,7 +686,7 @@
                     <div class="section-card">
                         <div class="section-header">
                             <div class="section-title">📁 Recente Dossiers</div>
-                            <button class="btn btn-primary" onclick="showView('dossiers', document.querySelector('.nav-item:nth-child(2)'))">
+                            <button class="btn btn-primary" onclick="showView('dossiers', document.querySelectorAll('.nav-item')[1])">
                                 Bekijk alle →
                             </button>
                         </div>
@@ -802,37 +704,32 @@
                         </div>
                         <div style="display: flex; gap: 12px; flex-wrap: wrap;">
                             <button class="btn btn-primary" onclick="showView('analyze', document.querySelectorAll('.nav-item')[2])">
-                                 Nieuwe Analyse
+                                🔍 Nieuwe Analyse
                             </button>
                             <button class="btn btn-secondary" onclick="openNewDossierModal()">
-                                📁 Nieuw Dossier
+                                 Nieuw Dossier
                             </button>
                             <button class="btn btn-secondary" onclick="showComingSoon('Document Drafter')">
-                                📝 Document Drafter
+                                 Document Drafter
                             </button>
                         </div>
                     </div>
                 </div>
                 
-                <!-- DOSSIERS VIEW -->
+                <!-- DOSSIERS -->
                 <div id="view-dossiers" class="view">
                     <div class="section-card">
                         <div class="section-header">
-                            <div class="section-title"> Alle Dossiers</div>
+                            <div class="section-title">📁 Alle Dossiers</div>
                             <button class="btn btn-primary" onclick="openNewDossierModal()">
                                 + Nieuw Dossier
                             </button>
                         </div>
-                        <div id="all-dossiers" class="dossier-list">
-                            <div class="empty-state">
-                                <div class="icon">📁</div>
-                                <p>Nog geen dossiers aangemaakt</p>
-                            </div>
-                        </div>
+                        <div id="all-dossiers" class="dossier-list"></div>
                     </div>
                 </div>
                 
-                <!-- ANALYZE VIEW -->
+                <!-- ANALYZE -->
                 <div id="view-analyze" class="view">
                     <div class="analysis-form">
                         <h2 style="margin-bottom: 24px;">🔍 Nieuwe Juridische Analyse</h2>
@@ -845,12 +742,8 @@
                         </div>
                         
                         <div class="mode-selector">
-                            <div class="mode-btn active" onclick="setMode('standard', this)">
-                                📄 Standaard
-                            </div>
-                            <div class="mode-btn" onclick="setMode('advocaat', this)">
-                                ⚖️ Advocaat Mode
-                            </div>
+                            <div class="mode-btn active" onclick="setMode('standard', this)">📄 Standaard</div>
+                            <div class="mode-btn" onclick="setMode('advocaat', this)">️ Advocaat Mode</div>
                         </div>
                         
                         <div class="form-group">
@@ -872,17 +765,24 @@
                         </div>
                         
                         <div class="form-group">
-                            <label>Plak je contract of juridische tekst:</label>
+                            <label>Of upload een bestand (PDF/TXT/DOCX):</label>
+                            <div class="file-upload-area" onclick="document.getElementById('file-input').click()">
+                                <div class="icon">📄</div>
+                                <p><strong>Klik om bestand te uploaden</strong></p>
+                                <div class="hint">PDF, TXT of DOCX (max 10MB)</div>
+                            </div>
+                            <input type="file" id="file-input" accept=".pdf,.txt,.docx" style="display: none;" onchange="handleFileSelect(event)">
+                            <div id="uploaded-files" class="uploaded-files"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Of plak je tekst hier:</label>
                             <textarea id="text-input" placeholder="Plak hier de tekst van je document..."></textarea>
                         </div>
                         
                         <div style="display: flex; gap: 12px;">
-                            <button class="btn btn-primary" onclick="analyzeText()">
-                                 Analyseer Tekst
-                            </button>
-                            <button class="btn btn-secondary" onclick="document.getElementById('text-input').value = ''">
-                                Wissen
-                            </button>
+                            <button class="btn btn-primary" onclick="analyzeText()">🔍 Analyseer</button>
+                            <button class="btn btn-secondary" onclick="clearForm()">Wissen</button>
                         </div>
                         
                         <div id="loading" class="loading">
@@ -898,7 +798,7 @@
                     </div>
                 </div>
                 
-                <!-- SETTINGS VIEW -->
+                <!-- SETTINGS -->
                 <div id="view-settings" class="view">
                     <div class="section-card">
                         <div class="section-header">
@@ -937,7 +837,7 @@
     <div class="ref-sidebar" id="ref-sidebar">
         <div class="ref-sidebar-header">
             <button class="ref-close" onclick="closeRefSidebar()">×</button>
-            <h2 id="ref-title">📚 Wetsartikel</h2>
+            <h2 id="ref-title"> Wetsartikel</h2>
             <div id="ref-subtitle" style="opacity: 0.9;">Laden...</div>
         </div>
         <div class="ref-content" id="ref-content"></div>
@@ -947,14 +847,17 @@
     <div class="modal-overlay" id="dossier-modal">
         <div class="modal">
             <h3>📁 Nieuw Dossier Aanmaken</h3>
+            
             <div class="form-group">
                 <label>Dossier naam:</label>
                 <input type="text" id="dossier-name" placeholder="bijv. Van der Heijden echtscheiding">
             </div>
+            
             <div class="form-group">
                 <label>Klant:</label>
                 <input type="text" id="dossier-client" placeholder="bijv. Johannes van der Heijden">
             </div>
+            
             <div class="form-group">
                 <label>Rechtsgebied:</label>
                 <select id="dossier-type">
@@ -967,6 +870,18 @@
                     <option>Overig</option>
                 </select>
             </div>
+            
+            <div class="form-group">
+                <label>Upload document (optioneel):</label>
+                <div class="file-upload-area" onclick="document.getElementById('dossier-file-input').click()">
+                    <div class="icon">📄</div>
+                    <p><strong>Klik om bestand te uploaden</strong></p>
+                    <div class="hint">PDF, TXT of DOCX (max 10MB)</div>
+                </div>
+                <input type="file" id="dossier-file-input" accept=".pdf,.txt,.docx" style="display: none;" onchange="handleDossierFileSelect(event)">
+                <div id="dossier-uploaded-files" class="uploaded-files"></div>
+            </div>
+            
             <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="closeDossierModal()">Annuleren</button>
                 <button class="btn btn-primary" onclick="createDossier()">Aanmaken</button>
@@ -978,17 +893,17 @@
         const API_BASE = window.location.origin;
         let currentMode = 'standard';
         let currentAnalysis = null;
+        let selectedFile = null;
+        let dossierSelectedFile = null;
         let dossiers = JSON.parse(localStorage.getItem('legallens_dossiers') || '[]');
         let analyses = JSON.parse(localStorage.getItem('legallens_analyses') || '[]');
         
-        // Initialize
         document.addEventListener('DOMContentLoaded', () => {
             updateDashboard();
             renderDossiers();
             updateDossierSelect();
         });
         
-        // Navigation
         function showView(viewName, navElement) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -1012,14 +927,62 @@
             alert(`${feature} komt binnenkort beschikbaar in LegalLens Pro!`);
         }
         
-        // Mode
         function setMode(mode, btn) {
             currentMode = mode;
             document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
         }
         
-        // Dossier Management
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                selectedFile = file;
+                document.getElementById('uploaded-files').innerHTML = `
+                    <div class="uploaded-file">
+                        <div class="file-info">
+                            <span class="file-icon">📄</span>
+                            <div>
+                                <div class="file-name">${file.name}</div>
+                                <div class="file-size">${(file.size / 1024).toFixed(1)} KB</div>
+                            </div>
+                        </div>
+                        <button class="btn btn-sm btn-secondary" onclick="clearFileSelection()">✕</button>
+                    </div>
+                `;
+            }
+        }
+        
+        function clearFileSelection() {
+            selectedFile = null;
+            document.getElementById('file-input').value = '';
+            document.getElementById('uploaded-files').innerHTML = '';
+        }
+        
+        function handleDossierFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                dossierSelectedFile = file;
+                document.getElementById('dossier-uploaded-files').innerHTML = `
+                    <div class="uploaded-file">
+                        <div class="file-info">
+                            <span class="file-icon">📄</span>
+                            <div>
+                                <div class="file-name">${file.name}</div>
+                                <div class="file-size">${(file.size / 1024).toFixed(1)} KB</div>
+                            </div>
+                        </div>
+                        <button class="btn btn-sm btn-secondary" onclick="clearDossierFileSelection()">✕</button>
+                    </div>
+                `;
+            }
+        }
+        
+        function clearDossierFileSelection() {
+            dossierSelectedFile = null;
+            document.getElementById('dossier-file-input').value = '';
+            document.getElementById('dossier-uploaded-files').innerHTML = '';
+        }
+        
         function openNewDossierModal() {
             document.getElementById('dossier-modal').classList.add('active');
         }
@@ -1028,9 +991,10 @@
             document.getElementById('dossier-modal').classList.remove('active');
             document.getElementById('dossier-name').value = '';
             document.getElementById('dossier-client').value = '';
+            clearDossierFileSelection();
         }
         
-        function createDossier() {
+        async function createDossier() {
             const name = document.getElementById('dossier-name').value.trim();
             const client = document.getElementById('dossier-client').value.trim();
             const type = document.getElementById('dossier-type').value;
@@ -1047,16 +1011,69 @@
                 type,
                 status: 'active',
                 created: new Date().toISOString(),
+                files: [],
                 analyses: []
             };
             
+            // Upload file if selected
+            if (dossierSelectedFile) {
+                try {
+                    const formData = new FormData();
+                    formData.append('file', dossierSelectedFile);
+                    formData.append('mode', 'standard');
+                    formData.append('analysis_type', 'contract');
+                    
+                    // Show loading
+                    document.getElementById('dossier-uploaded-files').innerHTML = `
+                        <div class="uploaded-file">
+                            <div class="file-info">
+                                <span class="file-icon">⏳</span>
+                                <div>
+                                    <div class="file-name">${dossierSelectedFile.name}</div>
+                                    <div class="file-size">Uploaden en analyseren...</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    const response = await fetch(`${API_BASE}/api/analyze-file`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        dossier.files.push({
+                            name: dossierSelectedFile.name,
+                            size: dossierSelectedFile.size,
+                            uploaded: new Date().toISOString()
+                        });
+                        dossier.analyses.push(result);
+                        
+                        analyses.unshift({
+                            ...result,
+                            dossierId: dossier.id,
+                            timestamp: new Date().toISOString()
+                        });
+                    } else {
+                        alert('Bestand geüpload maar analyse mislukt');
+                    }
+                } catch (error) {
+                    console.error('Upload error:', error);
+                    alert('Fout bij uploaden: ' + error.message);
+                }
+            }
+            
             dossiers.unshift(dossier);
             localStorage.setItem('legallens_dossiers', JSON.stringify(dossiers));
+            localStorage.setItem('legallens_analyses', JSON.stringify(analyses));
             
             closeDossierModal();
             renderDossiers();
             updateDossierSelect();
             updateDashboard();
+            
+            alert('Dossier aangemaakt!' + (dossierSelectedFile ? ' Analyse is gestart.' : ''));
         }
         
         function renderDossiers() {
@@ -1073,21 +1090,98 @@
             }
             
             container.innerHTML = dossiers.map(d => `
-                <div class="dossier-item">
-                    <div class="dossier-info">
-                        <h4>${d.name}</h4>
-                        <div class="dossier-meta">
-                            👤 ${d.client || 'Geen klant'} • 📋 ${d.type} • 📅 ${new Date(d.created).toLocaleDateString('nl-NL')}
+                <div class="dossier-item" style="flex-direction: column; align-items: stretch;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div class="dossier-info">
+                            <h4>${d.name}</h4>
+                            <div class="dossier-meta">
+                                👤 ${d.client || 'Geen klant'} • 📋 ${d.type} • 📅 ${new Date(d.created).toLocaleDateString('nl-NL')}
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <span class="dossier-status status-${d.status}">${d.status === 'active' ? 'Actief' : d.status}</span>
+                            <button class="btn btn-sm btn-secondary" onclick="addFileToDossier('${d.id}')">📄 Bestand</button>
+                            <button class="btn btn-sm btn-secondary" onclick="deleteDossier('${d.id}')">️</button>
                         </div>
                     </div>
-                    <div style="display: flex; gap: 8px; align-items: center;">
-                        <span class="dossier-status status-${d.status}">${d.status === 'active' ? 'Actief' : d.status}</span>
-                        <button class="btn btn-secondary" onclick="deleteDossier('${d.id}')" style="padding: 6px 12px; font-size: 0.85em;">
-                            🗑️
-                        </button>
-                    </div>
+                    ${d.files && d.files.length > 0 ? `
+                        <div class="file-list">
+                            ${d.files.map(f => `
+                                <div class="file-item">
+                                    <div class="file-info">
+                                        <span class="file-icon">📄</span>
+                                        <div>
+                                            <div class="file-name">${f.name}</div>
+                                            <div class="file-size">${(f.size / 1024).toFixed(1)} KB • ${new Date(f.uploaded).toLocaleDateString('nl-NL')}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : '<div style="margin-top: 8px; font-size: 0.85em; color: var(--text-light);">📎 Geen bestanden</div>'}
+                    ${d.analyses && d.analyses.length > 0 ? `
+                        <div style="margin-top: 8px; font-size: 0.85em; color: var(--success);">
+                            ✅ ${d.analyses.length} analyse(s) voltooid
+                        </div>
+                    ` : ''}
                 </div>
             `).join('');
+        }
+        
+        async function addFileToDossier(dossierId) {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.pdf,.txt,.docx';
+            input.onchange = async (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+                
+                const dossier = dossiers.find(d => d.id === dossierId);
+                if (!dossier) return;
+                
+                try {
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('mode', 'standard');
+                    formData.append('analysis_type', 'contract');
+                    
+                    alert('Bestand wordt geüpload en geanalyseerd...');
+                    
+                    const response = await fetch(`${API_BASE}/api/analyze-file`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        dossier.files.push({
+                            name: file.name,
+                            size: file.size,
+                            uploaded: new Date().toISOString()
+                        });
+                        dossier.analyses.push(result);
+                        
+                        analyses.unshift({
+                            ...result,
+                            dossierId: dossier.id,
+                            timestamp: new Date().toISOString()
+                        });
+                        
+                        localStorage.setItem('legallens_dossiers', JSON.stringify(dossiers));
+                        localStorage.setItem('legallens_analyses', JSON.stringify(analyses));
+                        
+                        renderDossiers();
+                        updateDashboard();
+                        
+                        alert('Bestand geüpload en geanalyseerd!');
+                    } else {
+                        alert('Upload mislukt');
+                    }
+                } catch (error) {
+                    alert('Fout: ' + error.message);
+                }
+            };
+            input.click();
         }
         
         function deleteDossier(id) {
@@ -1116,7 +1210,6 @@
             const totalHours = analyses.reduce((sum, a) => sum + (a.time_saved_hours || 0), 0);
             document.getElementById('stat-hours').textContent = totalHours.toFixed(1) + 'u';
             
-            // Recent dossiers
             const recentContainer = document.getElementById('recent-dossiers');
             if (dossiers.length === 0) {
                 recentContainer.innerHTML = `
@@ -1140,17 +1233,17 @@
             }
         }
         
-        // Analysis
         async function analyzeText() {
             const text = document.getElementById('text-input').value.trim();
             const analysisType = document.getElementById('analysis-type').value;
             const dossierId = document.getElementById('dossier-select').value;
             
-            if (!text) {
-                alert('Vul eerst een tekst in');
+            if (!text && !selectedFile) {
+                alert('Vul een tekst in of upload een bestand');
                 return;
             }
-            if (text.length < 50) {
+            
+            if (text && text.length < 50) {
                 alert('Tekst is te kort (minimaal 50 tekens)');
                 return;
             }
@@ -1159,21 +1252,44 @@
             document.getElementById('result').classList.remove('active');
             
             try {
-                const response = await fetch(`${API_BASE}/api/analyze-text`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text, mode: currentMode, analysis_type: analysisType })
-                });
+                let result;
                 
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.detail || `Server error: ${response.status}`);
+                if (selectedFile) {
+                    // Upload file
+                    const formData = new FormData();
+                    formData.append('file', selectedFile);
+                    formData.append('mode', currentMode);
+                    formData.append('analysis_type', analysisType);
+                    
+                    const response = await fetch(`${API_BASE}/api/analyze-file`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.detail || `Server error: ${response.status}`);
+                    }
+                    
+                    result = await response.json();
+                } else {
+                    // Analyze text
+                    const response = await fetch(`${API_BASE}/api/analyze-text`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ text, mode: currentMode, analysis_type: analysisType })
+                    });
+                    
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.detail || `Server error: ${response.status}`);
+                    }
+                    
+                    result = await response.json();
                 }
                 
-                const result = await response.json();
                 currentAnalysis = result;
                 
-                // Save to history
                 analyses.unshift({
                     ...result,
                     dossierId,
@@ -1181,11 +1297,17 @@
                 });
                 localStorage.setItem('legallens_analyses', JSON.stringify(analyses));
                 
-                // Link to dossier
                 if (dossierId) {
                     const dossier = dossiers.find(d => d.id === dossierId);
                     if (dossier) {
-                        dossier.analyses.push(result.document_id);
+                        dossier.analyses.push(result);
+                        if (selectedFile) {
+                            dossier.files.push({
+                                name: selectedFile.name,
+                                size: selectedFile.size,
+                                uploaded: new Date().toISOString()
+                            });
+                        }
                         localStorage.setItem('legallens_dossiers', JSON.stringify(dossiers));
                     }
                 }
@@ -1200,6 +1322,12 @@
             }
         }
         
+        function clearForm() {
+            document.getElementById('text-input').value = '';
+            clearFileSelection();
+            document.getElementById('result').classList.remove('active');
+        }
+        
         function displayResult(result) {
             const content = document.getElementById('result-content');
             const sentimentColor = result.sentiment_score > 0.7 ? '#51cf66' : 
@@ -1207,7 +1335,7 @@
             
             let html = `
                 <div style="background: linear-gradient(135deg, #51cf66 0%, #40c057 100%); color: white; padding: 16px; border-radius: 8px; text-align: center; margin-bottom: 24px; font-weight: 600;">
-                    ⏱️ Tijdbesparing: ${result.time_saved_hours || 0} uur handmatig werk
+                    ️ Tijdbesparing: ${result.time_saved_hours || 0} uur handmatig werk
                 </div>
                 
                 <div class="result-section">
@@ -1248,7 +1376,7 @@
             if (result.risks && result.risks.length > 0) {
                 html += `
                     <div class="result-section">
-                        <h4>️ Risico's (${result.risks.length})</h4>
+                        <h4>⚠️ Risico's (${result.risks.length})</h4>
                         ${result.risks.map(r => `
                             <div class="risk-item">
                                 <span class="severity-badge severity-${r.severity.toLowerCase()}">${r.severity}</span>
@@ -1337,7 +1465,6 @@
             document.getElementById('result').classList.add('active');
         }
         
-        // Legal Reference Sidebar
         async function openRefSidebar(article) {
             let normalizedArticle = article
                 .replace(/Art\.\s*/gi, '')
@@ -1377,7 +1504,7 @@
                 
                 let html = `
                     <div class="ref-section">
-                        <h3>📜 Wettekst</h3>
+                        <h3> Wettekst</h3>
                         <div class="ref-text">${data.text}</div>
                     </div>
                     
