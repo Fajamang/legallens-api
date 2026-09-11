@@ -1,6 +1,6 @@
 """
 LegalLens Pro API v9.0
-Robuuste backend met database, file storage, en alle features
+Robuuste backend met SQLite, Rechtspraak.nl API, en RAG-architectuur
 """
 
 import os
@@ -9,11 +9,11 @@ import json
 import uuid
 import shutil
 import logging
+import requests
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Dict, Optional, Any
 
-import requests
 from dotenv import load_dotenv
 from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, Form, Request
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
@@ -36,10 +36,11 @@ logger = logging.getLogger(__name__)
 # --- Database Setup (SQLite) ---
 import sqlite3
 
-DB_PATH = Path("legallens.db")
+DB_PATH = Path("data/legallens.db")
 
 def init_db():
     """Initialiseer SQLite database"""
+    DB_PATH.parent.mkdir(exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
@@ -96,7 +97,7 @@ def init_db():
     conn.close()
     logger.info("Database initialized")
 
-# Initialiseer database bij startup
+# Initialiseer database
 init_db()
 
 def get_db():
@@ -191,155 +192,59 @@ class DossierUpdate(BaseModel):
     type: Optional[str] = None
     status: Optional[str] = None
 
-# --- Wettekst Database ---
-LEGAL_DATABASE: Dict[str, Dict] = {
-    "1:94 BW": {
-        "title": "Goederen van de gemeenschap",
-        "text": "De gemeenschap omvat alle goederen en schulden van de echtgenoten, voor zover niet uit de volgende artikelen een andersluidende regel voortvloeit.",
-        "related": ["1:95 BW", "1:96 BW", "1:100 BW"],
-        "history": [{"year": 2018, "change": "Wet beperkte gemeenschap van goederen"}]
-    },
-    "1:95 BW": {
-        "title": "Uitgesloten van de gemeenschap",
-        "text": "Uitgesloten van de gemeenschap zijn de goederen die een der echtgenoten bij uiterste wil of bij titel van gift zijn verkregen, tenzij de erflater of schenker heeft bepaald dat zij in de gemeenschap zullen vallen.",
-        "related": ["1:94 BW", "1:100 BW"],
-        "history": []
-    },
-    "1:100 BW": {
-        "title": "Huwelijkse voorwaarden",
-        "text": "Echtgenoten kunnen bij of tijdens het huwelijk huwelijkse voorwaarden maken of wijzigen.",
-        "related": ["1:94 BW", "1:101 BW", "1:102 BW"],
-        "history": [{"year": 2018, "change": "Vereenvoudiging wijzigingsprocedure"}]
-    },
-    "1:157 BW": {
-        "title": "Partneralimentatie",
-        "text": "1. De echtgenoot die na de echtscheiding niet in zijn eigen behoeften kan voorzien, heeft aanspraak op bijdrage van de andere echtgenoot in de kosten van zijn bestaan. 2. De bijdrage wordt vastgesteld naar redelijkheid, rekening houdend met de behoefte van de ene en de draagkracht van de andere partij.",
-        "related": ["1:158 BW", "1:159 BW", "1:160 BW"],
-        "history": [{"year": 2020, "change": "Wet modernisering alimentatierecht"}]
-    },
-    "1:158 BW": {
-        "title": "Duur partneralimentatie",
-        "text": "De duur van de verplichting tot partneralimentatie is twaalf jaren, tenzij de rechter een kortere duur bepaalt.",
-        "related": ["1:157 BW", "1:159 BW"],
-        "history": [{"year": 2020, "change": "Verkorting van levenslang naar 12 jaar"}]
-    },
-    "1:159 BW": {
-        "title": "Herziening partneralimentatie",
-        "text": "Op verzoek van een der partijen kan de rechter de vastgestelde bijdrage wijzigen of geheel of gedeeltelijk opheffen.",
-        "related": ["1:157 BW", "1:158 BW"],
-        "history": []
-    },
-    "1:160 BW": {
-        "title": "Einde partneralimentatie",
-        "text": "De verplichting tot partneralimentatie eindigt door het overlijden van de rechthebbende of de verplichte, door hertrouwen of het aangaan van een geregistreerd partnerschap van de rechthebbende.",
-        "related": ["1:157 BW", "1:158 BW"],
-        "history": []
-    },
-    "1:247 BW": {
-        "title": "Ouderlijk gezag",
-        "text": "1. Ouders zijn verplicht om hun minderjarig kind te verzorgen en op te voeden. 2. Het gezag omvat de verplichting en het recht om de persoon en het vermogen van het kind te verzorgen.",
-        "related": ["1:251 BW", "1:252 BW", "1:377a BW"],
-        "history": [{"year": 1995, "change": "Gelijkstelling huwelijkse en niet-huwelijkse ouders"}]
-    },
-    "1:251 BW": {
-        "title": "Gezamenlijk gezag",
-        "text": "Het gezag over een minderjarig kind wordt uitgeoefend door beide ouders, tenzij het gezag aan één ouder is toegewezen.",
-        "related": ["1:247 BW", "1:252 BW"],
-        "history": []
-    },
-    "1:252 BW": {
-        "title": "Eenhoofdig gezag",
-        "text": "De rechter kan het gezag aan één ouder toewijzen indien het gezamenlijk gezag niet in het belang van het kind is.",
-        "related": ["1:247 BW", "1:251 BW"],
-        "history": []
-    },
-    "1:377a BW": {
-        "title": "Omgangsrecht",
-        "text": "1. De ouder die niet het gezag uitoefent, heeft recht op omgang met het kind. 2. Het kind heeft recht op omgang met de ouder die niet het gezag uitoefent.",
-        "related": ["1:247 BW", "1:377b BW"],
-        "history": []
-    },
-    "6:94 BW": {
-        "title": "Matiging van boetebedingen",
-        "text": "1. De rechter kan een beding dat strekt tot betaling van een geldsom indien de schuldenaar zijn verbintenis niet nakomt, ambtshalve of op verzoek matigen. 2. Matiging vindt slechts plaats indien redelijkheid en billijkheid dit gebieden.",
-        "related": ["6:91 BW", "6:92 BW", "6:93 BW"],
-        "history": [{"year": 1992, "change": "Opname in nieuw BW"}]
-    },
-    "6:162 BW": {
-        "title": "Onrechtmatige daad",
-        "text": "1. Hij die jegens een ander een onrechtmatige daad pleegt, welke hem kan worden toegerekend, is verplicht de schade die de ander dientengevolge lijdt te vergoeden. 2. Als onrechtmatig worden aangemerkt: een inbreuk op een recht, een doen of nalaten in strijd met een wettelijke plicht of met hetgeen volgens ongeschreven recht in het maatschappelijk verkeer betaamt.",
-        "related": ["6:163 BW", "6:95 BW"],
-        "history": [{"year": 1992, "change": "Opname in nieuw BW"}]
-    },
-    "6:75 BW": {
-        "title": "Overmacht",
-        "text": "Een tekortkoming kan niet aan de schuldenaar worden toegerekend, indien zij niet te wijten is aan zijn schuld en ook niet voor zijn rekening komt krachtens de wet, de rechtshandeling of in het verkeer geldende opvattingen.",
-        "related": ["6:74 BW", "6:76 BW"],
-        "history": []
-    },
-    "7:204 BW": {
-        "title": "Gebreken aan het gehuurde",
-        "text": "1. Een gebrek is een staat of eigenschap van het gehuurde die niet in overeenstemming is met de overeenkomst en daardoor de huurder het genot van het gehuurde ontneemt of beperkt. 2. Een gebrek wordt de huurder niet tegengeworpen indien hij het gebrek niet kende en niet behoorde te kennen bij het aangaan van de overeenkomst.",
-        "related": ["7:206 BW", "7:207 BW"],
-        "history": []
-    },
-    "7:206 BW": {
-        "title": "Onderhoudsverplichting verhuurder",
-        "text": "1. De verhuurder is verplicht het gehuurde in goede staat van onderhoud te leveren en gedurende de huur in die staat te onderhouden. 2. Deze verplichting kan niet worden uitgesloten of beperkt.",
-        "related": ["7:204 BW", "7:207 BW"],
-        "history": []
-    },
-    "7:207 BW": {
-        "title": "Herstel van gebreken",
-        "text": "1. Indien het gehuurde gebreken heeft die de verhuurder overeenkomstig artikel 7:206 had moeten verhelpen, kan de huurder de verhuurder schriftelijk in gebreke stellen en een redelijke termijn voor herstel bepalen.",
-        "related": ["7:204 BW", "7:206 BW"],
-        "history": []
-    },
-    "7:653 BW": {
-        "title": "Concurrentiebeding",
-        "text": "1. Een beding dat de werknemer verbiedt na beëindiging van de arbeidsovereenkomst werkzaamheden te verrichten die schadelijk zijn voor de werkgever, is nietig. 2. De rechter kan het beding geheel of gedeeltelijk in stand laten indien dit noodzakelijk is in verband met een zwaarwegend bedrijfsbelang.",
-        "related": ["7:652 BW", "7:654 BW"],
-        "history": [{"year": 2015, "change": "Wet werk en zekerheid"}]
-    },
-    "7:673 BW": {
-        "title": "Transitievergoeding",
-        "text": "1. De werknemer heeft bij ontslag recht op een transitievergoeding. 2. De transitievergoeding bedraagt 1/3 maandsalaris per gewerkt jaar.",
-        "related": ["7:672 BW", "7:674 BW"],
-        "history": [{"year": 2015, "change": "Invoering transitievergoeding"}]
-    }
-}
+# --- Rechtspraak.nl API (GRATIS) ---
+class RechtspraakAPI:
+    """Directe koppeling met Rechtspraak.nl Open Data API"""
+    
+    BASE_URL = "https://data.rechtspraak.nl/open-data/api"
+    
+    def __init__(self):
+        self.available = True
+        logger.info("Rechtspraak.nl API initialized")
+    
+    async def search_cases(self, article: str, max_results: int = 5) -> List[Dict]:
+        """Zoek jurisprudentie via Rechtspraak.nl API"""
+        try:
+            query = f"{article}"
+            params = {
+                "q": query,
+                "max": max_results,
+                "type": "Rechtspraak.Uitspraken",
+                "sort": "date",
+                "order": "desc"
+            }
+            
+            response = requests.get(
+                f"{self.BASE_URL}/search",
+                params=params,
+                timeout=10,
+                headers={"Accept": "application/json"}
+            )
+            response.raise_for_status()
+            data = response.json()
+            
+            cases = []
+            results = data.get("Results", [])
+            
+            for result in results[:max_results]:
+                content = result.get("Content", {})
+                cases.append({
+                    "ecli": content.get("Ecli", "Onbekend"),
+                    "date": content.get("DatumUitspraak", "Onbekend"),
+                    "court": content.get("Rechtspraak", {}).get("Naam", "Onbekende rechtbank"),
+                    "summary": content.get("Summary", {}).get("Value", "Geen samenvatting"),
+                    "title": content.get("Title", {}).get("Value", "Onbekende zaak"),
+                    "relevance": "hoog",
+                    "url": f"https://uitspraken.rechtspraak.nl/#!/details?id={content.get('Ecli', '')}"
+                })
+            
+            return cases
+            
+        except Exception as e:
+            logger.error(f"Rechtspraak.nl API error: {e}")
+            return []
 
-# --- Jurisprudentie Database ---
-JURISPRUDENCE_DATABASE: Dict[str, List[Dict]] = {
-    "1:157 BW": [
-        {"ecli": "ECLI:NL:HR:2024:456", "date": "2024-03-12", "court": "Hoge Raad", "summary": "Matiging partneralimentatie bij kennelijke onredelijkheid", "relevance": "hoog"},
-        {"ecli": "ECLI:NL:GHAMS:2025:789", "date": "2025-06-05", "court": "Gerechtshof Amsterdam", "summary": "Berekeningsmethode draagkracht bij partneralimentatie", "relevance": "hoog"}
-    ],
-    "6:94 BW": [
-        {"ecli": "ECLI:NL:HR:2023:123", "date": "2023-09-15", "court": "Hoge Raad", "summary": "Matiging boete van 25% naar 5% bij consumentencontract", "relevance": "hoog"}
-    ],
-    "1:247 BW": [
-        {"ecli": "ECLI:NL:RBMNE:2025:234", "date": "2025-02-20", "court": "Rechtbank Midden-Nederland", "summary": "Toewijzing eenhoofdig gezag bij ernstige communicatieproblemen", "relevance": "gemiddeld"}
-    ]
-}
-
-# --- Helper Functies ---
-def normalize_article(article: str) -> str:
-    """Normaliseer artikel naam"""
-    article = re.sub(r'^Art\.\s*', '', article, flags=re.IGNORECASE)
-    article = re.sub(r'^Artikel\s*', '', article, flags=re.IGNORECASE)
-    article = ' '.join(article.split())
-    if not any(x in article.upper() for x in ['BW', 'SR', 'AWB']):
-        article = article + ' BW'
-    return article
-
-async def verify_api_key(api_key: str = Depends(api_key_header)) -> str:
-    """Verifieer API key"""
-    if api_key and api_key not in VALID_API_KEYS:
-        raise HTTPException(status_code=403, detail="Invalid API Key")
-    return api_key or "public"
-
-# --- Live Search Engine ---
+# --- Live Search Engine (Tavily) ---
 class LiveLegalSearch:
     """Zoekmachine voor live wettekst en jurisprudentie"""
     
@@ -350,7 +255,7 @@ class LiveLegalSearch:
             logger.warning("Tavily API key niet gevonden - alleen database beschikbaar")
 
     async def search_bw_text(self, article: str) -> str:
-        """Zoek wettekst op via Tavily"""
+        """Zoek wettekst op via wetten.overheid.nl of Tavily"""
         if not self.available:
             return "Live search niet beschikbaar (geen Tavily API key)"
         
@@ -382,13 +287,22 @@ class LiveLegalSearch:
             return "Fout bij ophalen wettekst"
 
     async def search_case_law(self, article: str) -> List[Dict]:
-        """Zoek jurisprudentie op via Tavily"""
+        """Zoek jurisprudentie - eerst Rechtspraak.nl, dan Tavily als fallback"""
+        
+        # 1. Probeer eerst Rechtspraak.nl (gratis, gestructureerd)
+        cases = await rechtspraak_api.search_cases(article, max_results=3)
+        
+        if cases:
+            logger.info(f"Found {len(cases)} cases from Rechtspraak.nl")
+            return cases
+        
+        # 2. Fallback naar Tavily als Rechtspraak.nl niets oplevert
         if not self.available:
             return []
         
         try:
             headers = {"Content-Type": "application/json", "api-key": self.api_key}
-            query = f"Artikel {article} BW uitspraak rechtspraak.nl Hoge Raad"
+            query = f"Artikel {article} BW uitspraak rechtspraak.nl"
             payload = {
                 "query": query,
                 "search_depth": "basic",
@@ -420,6 +334,8 @@ class LiveLegalSearch:
             logger.error(f"Case law search error: {e}")
             return []
 
+# Initialiseer
+rechtspraak_api = RechtspraakAPI()
 live_search = LiveLegalSearch()
 
 # --- AI Analyzer ---
@@ -440,43 +356,36 @@ class AIAnalyzer:
         return self._generate_mock_response(text)
     
     async def get_legal_commentary(self, article: str) -> Dict:
-        """Haal wettekst + AI commentaar op"""
+        """Haal wettekst + AI commentaar op (RAG model)"""
         logger.info(f"Looking up article: {article}")
         
+        # RAG: Haal live data op
         bw_text = await self._get_bw_text(article)
         case_law = await self._get_case_law(article)
         
-        db_entry = LEGAL_DATABASE.get(article, {})
-        title = db_entry.get("title", f"Artikel {article}")
-        related = db_entry.get("related", [])
-        history = db_entry.get("history", [])
-        
-        commentary = await self._generate_commentary(article, title, bw_text)
+        # Genereer commentaar op basis van live data
+        commentary = await self._generate_commentary(article, bw_text)
         
         return {
             "article": article,
-            "title": title,
+            "title": f"Artikel {article}",
             "text": bw_text,
             "commentary": commentary,
-            "related": related,
-            "history": history,
+            "related": [],  # Kan dynamisch opgehaald worden
+            "history": [],  # Kan dynamisch opgehaald worden
             "jurisprudence": case_law
         }
     
     async def _get_bw_text(self, article: str) -> str:
-        """Haal wettekst op"""
-        if article in LEGAL_DATABASE:
-            return LEGAL_DATABASE[article]["text"]
+        """Haal wettekst op (RAG: dynamisch ophalen)"""
         return await live_search.search_bw_text(article)
     
     async def _get_case_law(self, article: str) -> List[Dict]:
-        """Haal jurisprudentie op"""
-        if article in JURISPRUDENCE_DATABASE:
-            return JURISPRUDENCE_DATABASE[article]
+        """Haal jurisprudentie op (RAG: dynamisch ophalen)"""
         return await live_search.search_case_law(article)
     
-    async def _generate_commentary(self, article: str, title: str, bw_text: str) -> str:
-        """Genereer AI commentaar"""
+    async def _generate_commentary(self, article: str, bw_text: str) -> str:
+        """Genereer AI commentaar op basis van wettekst"""
         try:
             headers = {
                 "Authorization": f"Bearer {OPENAI_API_KEY}",
@@ -485,7 +394,7 @@ class AIAnalyzer:
             
             prompt = f"""Je bent een ervaren Nederlandse jurist. Geef een beknopte, praktische uitleg van:
 
-**{article}: {title}**
+**{article}**
 
 Wettekst:
 {bw_text}
@@ -684,6 +593,22 @@ Geef JSON met: summary, contract_type, parties_involved, key_dates, risks, overa
 
 analyzer = AIAnalyzer()
 
+# --- Helper Functies ---
+def normalize_article(article: str) -> str:
+    """Normaliseer artikel naam"""
+    article = re.sub(r'^Art\.\s*', '', article, flags=re.IGNORECASE)
+    article = re.sub(r'^Artikel\s*', '', article, flags=re.IGNORECASE)
+    article = ' '.join(article.split())
+    if not any(x in article.upper() for x in ['BW', 'SR', 'AWB']):
+        article = article + ' BW'
+    return article
+
+async def verify_api_key(api_key: str = Depends(api_key_header)) -> str:
+    """Verifieer API key"""
+    if api_key and api_key not in VALID_API_KEYS:
+        raise HTTPException(status_code=403, detail="Invalid API Key")
+    return api_key or "public"
+
 # --- API Endpoints ---
 
 @app.get("/", response_class=HTMLResponse)
@@ -698,6 +623,7 @@ def health_check():
         "status": "healthy",
         "provider": AI_PROVIDER,
         "tavily_available": live_search.available,
+        "rechtspraak_available": rechtspraak_api.available,
         "version": "9.0.0",
         "database": "connected" if DB_PATH.exists() else "not connected"
     }
@@ -837,7 +763,6 @@ async def upload_file_to_dossier(
     api_key: str = Depends(verify_api_key)
 ):
     """Upload bestand naar dossier"""
-    # Check if dossier exists
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("SELECT id FROM dossiers WHERE id = ?", (dossier_id,))
@@ -845,7 +770,6 @@ async def upload_file_to_dossier(
         conn.close()
         raise HTTPException(status_code=404, detail="Dossier niet gevonden")
     
-    # Save file
     file_id = str(uuid.uuid4())
     file_ext = Path(file.filename).suffix
     saved_filename = f"{file_id}{file_ext}"
@@ -854,7 +778,6 @@ async def upload_file_to_dossier(
     with open(file_path, "wb") as f:
         shutil.copyfileobj(file.file, f)
     
-    # Save to database
     cursor.execute(
         "INSERT INTO files (id, dossier_id, filename, original_name, size) VALUES (?, ?, ?, ?, ?)",
         (file_id, dossier_id, saved_filename, file.filename, file.size)
@@ -954,7 +877,6 @@ async def analyze_file(
     if not file.filename.endswith(('.pdf', '.docx', '.txt')):
         raise HTTPException(status_code=400, detail="Only PDF, DOCX, and TXT files supported")
     
-    # Save file temporarily
     file_id = str(uuid.uuid4())
     file_ext = Path(file.filename).suffix
     temp_path = UPLOAD_DIR / f"temp_{file_id}{file_ext}"
@@ -963,7 +885,6 @@ async def analyze_file(
         shutil.copyfileobj(file.file, file_object)
     
     try:
-        # Extract text
         text = ""
         if file.filename.endswith('.txt'):
             with open(temp_path, 'r', encoding='utf-8') as f:
@@ -982,10 +903,8 @@ async def analyze_file(
         if not text or len(text.strip()) < 50:
             raise HTTPException(status_code=400, detail="Could not extract enough text")
         
-        # Analyze
         result = await analyzer.analyze_text(text, mode, analysis_type)
         
-        # Save analysis to database
         analysis_id = str(uuid.uuid4())
         conn = get_db()
         cursor = conn.cursor()
@@ -1014,7 +933,6 @@ async def analyze_file(
             )
         )
         
-        # Save file to database if dossier_id provided
         if dossier_id:
             saved_filename = f"{file_id}{file_ext}"
             final_path = UPLOAD_DIR / saved_filename
@@ -1066,7 +984,6 @@ async def list_analyses(
     analyses = []
     for row in cursor.fetchall():
         analysis = dict(row)
-        # Parse JSON fields
         for field in ['parties_involved', 'key_dates', 'risks', 'action_plan', 
                       'negotiation_strategy', 'due_diligence_findings']:
             if analysis.get(field):
@@ -1097,7 +1014,6 @@ async def get_analysis(
     
     analysis_dict = dict(analysis)
     
-    # Parse JSON fields
     for field in ['parties_involved', 'key_dates', 'risks', 'action_plan', 
                   'negotiation_strategy', 'due_diligence_findings']:
         if analysis_dict.get(field):
@@ -1142,16 +1058,6 @@ async def get_legal_commentary(
     except Exception as e:
         logger.error(f"Legal commentary error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/api/legal-articles")
-def get_legal_articles():
-    """Lijst van beschikbare wetsartikelen"""
-    return {
-        "database_articles": list(LEGAL_DATABASE.keys()),
-        "live_search_available": live_search.available
-    }
-
-# --- Statistics Endpoint ---
 
 @app.get("/api/statistics")
 async def get_statistics(
