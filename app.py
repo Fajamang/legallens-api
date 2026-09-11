@@ -56,6 +56,19 @@ def init_db():
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
+
+    # Documenten tabel
+cursor.execute('''
+    CREATE TABLE IF NOT EXISTS documents (
+        id TEXT PRIMARY KEY,
+        template_id TEXT NOT NULL,
+        dossier_id TEXT,
+        content TEXT NOT NULL,
+        title TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (dossier_id) REFERENCES dossiers(id) ON DELETE SET NULL
+    )
+''')
     
     # Bestanden tabel
     cursor.execute('''
@@ -1083,6 +1096,533 @@ async def get_statistics(
         "total_analyses": total_analyses,
         "total_hours_saved": round(total_hours, 1)
     }
+
+# --- Document Drafter Models ---
+class DocumentTemplate(BaseModel):
+    id: str
+    name: str
+    category: str
+    description: str
+    fields: List[Dict[str, str]]
+    template_text: str
+
+class DocumentGenerateRequest(BaseModel):
+    template_id: str
+    dossier_id: Optional[str] = None
+    custom_fields: Dict[str, str] = {}
+    analysis_id: Optional[str] = None
+
+class DocumentGenerateResponse(BaseModel):
+    document_id: str
+    content: str
+    title: str
+    created_at: str
+
+# --- Document Templates Database ---
+DOCUMENT_TEMPLATES = {
+    "ingebrekestelling": {
+        "id": "ingebrekestelling",
+        "name": "Ingebrekestelling",
+        "category": "Algemeen",
+        "description": "Formele ingebrekestelling voor wanprestatie",
+        "fields": [
+            {"name": "afzender_naam", "label": "Naam afzender", "type": "text"},
+            {"name": "afzender_adres", "label": "Adres afzender", "type": "text"},
+            {"name": "ontvanger_naam", "label": "Naam ontvanger", "type": "text"},
+            {"name": "ontvanger_adres", "label": "Adres ontvanger", "type": "text"},
+            {"name": "datum", "label": "Datum", "type": "date"},
+            {"name": "contract_datum", "label": "Datum overeenkomst", "type": "date"},
+            {"name": "beschrijving_verplichting", "label": "Beschrijving verplichting", "type": "textarea"},
+            {"name": "termijn_dagen", "label": "Termijn (dagen)", "type": "number", "default": "14"},
+        ],
+        "template_text": """{afzender_naam}
+{afzender_adres}
+
+{ontvanger_naam}
+{ontvanger_adres}
+
+{datum}
+
+Betreft: Ingebrekestelling
+
+Geachte {ontvanger_naam},
+
+Hierbij stel ik u formeel in gebreke met betrekking tot de verplichtingen voortvloeiend uit de overeenkomst d.d. {contract_datum}.
+
+Ondanks herhaaldelijke verzoeken heeft u nagelaten om:
+{beschrijving_verplichting}
+
+Ik verzoek u om binnen {termijn_dagen} dagen na ontvangst van deze brief alsnog te voldoen aan uw verplichtingen.
+
+Mocht u binnen deze termijn niet aan uw verplichtingen voldoen, dan behoud ik mij het recht voor om over te gaan tot verdere juridische stappen, waaronder maar niet beperkt tot ontbinding van de overeenkomst en het vorderen van schadevergoeding.
+
+Ik vertrouw erop dat u deze zaak serieus zult nemen en zie uw reactie tegemoet.
+
+Met vriendelijke groet,
+
+{afzender_naam}"""
+    },
+    
+    "huurcontract": {
+        "id": "huurcontract",
+        "name": "Huurovereenkomst",
+        "category": "Huurrecht",
+        "description": "Standaard huurovereenkomst voor woonruimte",
+        "fields": [
+            {"name": "verhuurder_naam", "label": "Naam verhuurder", "type": "text"},
+            {"name": "verhuurder_adres", "label": "Adres verhuurder", "type": "text"},
+            {"name": "huurder_naam", "label": "Naam huurder", "type": "text"},
+            {"name": "huurder_adres", "label": "Adres huurder", "type": "text"},
+            {"name": "huurobject", "label": "Adres gehuurde woning", "type": "text"},
+            {"name": "huurprijs", "label": "Maandelijkse huurprijs (€)", "type": "number"},
+            {"name": "borg", "label": "Borgsom (€)", "type": "number"},
+            {"name": "start_datum", "label": "Startdatum huur", "type": "date"},
+            {"name": "duur_maanden", "label": "Duur contract (maanden)", "type": "number", "default": "12"},
+        ],
+        "template_text": """HUUROVEREENKOMST
+
+Tussen:
+{verhuurder_naam}
+{verhuurder_adres}
+(hierna te noemen: "Verhuurder")
+
+En:
+{huurder_naam}
+{huurder_adres}
+(hierna te noemen: "Huurder")
+
+Is overeengekomen het volgende:
+
+Artikel 1 - Huurobject
+Verhuurder verhuurt aan Huurder: {huurobject}
+
+Artikel 2 - Huurprijs
+De maandelijkse huurprijs bedraagt: € {huurprijs}
+De huurprijs is verschuldigd voor de eerste dag van elke maand.
+
+Artikel 3 - Borgsom
+Huurder betaalt bij ondertekening een borgsom van: € {borg}
+De borgsom wordt terugbetaald binnen 30 dagen na beëindiging van de huurovereenkomst, onder aftrek van eventuele schade.
+
+Artikel 4 - Duur
+De huurovereenkomst gaat in op: {start_datum}
+De huurovereenkomst wordt aangegaan voor de duur van: {duur_maanden} maanden
+
+Artikel 5 - Onderhoud
+Verhuurder is verantwoordelijk voor groot onderhoud aan het gehuurde.
+Huurder is verantwoordelijk voor klein onderhoud en dagelijks onderhoud.
+
+Artikel 6 - Opzegging
+De huurovereenkomst kan worden opgezegd met inachtneming van de wettelijke opzegtermijn.
+
+Artikel 7 - Toepasselijk recht
+Op deze overeenkomst is Nederlands recht van toepassing.
+
+Aldus overeengekomen en in tweevoud ondertekend.
+
+Verhuurder: ___________________          Huurder: ___________________
+{verhuurder_naam}                          {huurder_naam}"""
+    },
+    
+    "arbeidsovereenkomst": {
+        "id": "arbeidsovereenkomst",
+        "name": "Arbeidsovereenkomst",
+        "category": "Arbeidsrecht",
+        "description": "Standaard arbeidsovereenkomst voor onbepaalde tijd",
+        "fields": [
+            {"name": "werkgever_naam", "label": "Naam werkgever", "type": "text"},
+            {"name": "werkgever_adres", "label": "Adres werkgever", "type": "text"},
+            {"name": "werknemer_naam", "label": "Naam werknemer", "type": "text"},
+            {"name": "werknemer_adres", "label": "Adres werknemer", "type": "text"},
+            {"name": "functie", "label": "Functie", "type": "text"},
+            {"name": "salaris", "label": "Maandelijks salaris (€)", "type": "number"},
+            {"name": "uren_per_week", "label": "Uren per week", "type": "number", "default": "40"},
+            {"name": "start_datum", "label": "Startdatum", "type": "date"},
+            {"name": "proeftijd_maanden", "label": "Proeftijd (maanden)", "type": "number", "default": "2"},
+        ],
+        "template_text": """ARBEIDSOVEREENKOMST
+
+Tussen:
+{werkgever_naam}
+{werkgever_adres}
+(hierna te noemen: "Werkgever")
+
+En:
+{werknemer_naam}
+{werknemer_adres}
+(hierna te noemen: "Werknemer")
+
+Is overeengekomen het volgende:
+
+Artikel 1 - Functie
+Werknemer wordt aangesteld in de functie van: {functie}
+
+Artikel 2 - Duur
+De arbeidsovereenkomst gaat in op: {start_datum}
+De arbeidsovereenkomst wordt aangegaan voor onbepaalde tijd.
+
+Artikel 3 - Proeftijd
+De eerste {proeftijd_maanden} maanden gelden als proeftijd.
+
+Artikel 4 - Werktijd
+De werktijd bedraagt: {uren_per_week} uur per week
+
+Artikel 5 - Salaris
+Het bruto maandsalaris bedraagt: € {salaris}
+Het salaris wordt maandelijks achteraf betaald.
+
+Artikel 6 - Vakantiedagen
+Werknemer heeft recht op 4x de weekwerktijd aan vakantiedagen per jaar.
+
+Artikel 7 - Pensioen
+Werknemer neemt deel aan het pensioenfonds van Werkgever.
+
+Artikel 8 - Concurrentiebeding
+Na beëindiging van de arbeidsovereenkomst mag Werknemer gedurende 1 jaar geen concurrentiebedrijf bezoeken.
+
+Artikel 9 - Toepasselijk recht
+Op deze overeenkomst is Nederlands recht van toepassing.
+
+Aldus overeengekomen en in tweevoud ondertekend.
+
+Werkgever: ___________________          Werknemer: ___________________
+{werkgever_naam}                          {werknemer_naam}"""
+    },
+    
+    "adviesbrief": {
+        "id": "adviesbrief",
+        "name": "Juridische Adviesbrief",
+        "category": "Algemeen",
+        "description": "Professionele juridische adviesbrief",
+        "fields": [
+            {"name": "advocaat_naam", "label": "Naam advocaat", "type": "text"},
+            {"name": "advocaat_kantoor", "label": "Naam advocatenkantoor", "type": "text"},
+            {"name": "client_naam", "label": "Naam cliënt", "type": "text"},
+            {"name": "client_adres", "label": "Adres cliënt", "type": "text"},
+            {"name": "datum", "label": "Datum", "type": "date"},
+            {"name": "dossier_nummer", "label": "Dossiernummer", "type": "text"},
+            {"name": "onderwerp", "label": "Onderwerp", "type": "text"},
+            {"name": "feitelijk_kader", "label": "Feitelijk kader", "type": "textarea"},
+            {"name": "juridische_analyse", "label": "Juridische analyse", "type": "textarea"},
+            {"name": "conclusie", "label": "Conclusie/Advies", "type": "textarea"},
+        ],
+        "template_text": """{advocaat_kantoor}
+{advocaat_naam}
+
+{client_naam}
+{client_adres}
+
+{datum}
+
+Dossiernummer: {dossier_nummer}
+
+Betreft: {onderwerp}
+
+Geachte {client_naam},
+
+Naar aanleiding van ons gesprek en het door u verstrekte materiaal breng ik hierbij mijn juridische advies uit.
+
+1. FEITELIJK KADER
+
+{feitelijk_kader}
+
+2. JURIDISCHE ANALYSE
+
+{juridische_analyse}
+
+3. CONCLUSIE EN ADVIES
+
+{conclusie}
+
+Mocht u naar aanleiding van dit advies nog vragen hebben, dan verneem ik dat graag.
+
+Met vriendelijke groet,
+
+{advocaat_naam}
+{advocaat_kantoor}"""
+    },
+    
+    "dagvaarding": {
+        "id": "dagvaarding",
+        "name": "Dagvaarding",
+        "category": "Procesrecht",
+        "description": "Dagvaarding voor de rechtbank",
+        "fields": [
+            {"name": "eiser_naam", "label": "Naam eiser", "type": "text"},
+            {"name": "eiser_adres", "label": "Adres eiser", "type": "text"},
+            {"name": "gedaagde_naam", "label": "Naam gedaagde", "type": "text"},
+            {"name": "gedaagde_adres", "label": "Adres gedaagde", "type": "text"},
+            {"name": "rechtbank", "label": "Rechtbank", "type": "text", "default": "Rechtbank Amsterdam"},
+            {"name": "datum", "label": "Datum", "type": "date"},
+            {"name": "vordering", "label": "Vordering", "type": "textarea"},
+            {"name": "feitelijk_kader", "label": "Feitelijke grondslag", "type": "textarea"},
+            {"name": "juridische_grondslag", "label": "Juridische grondslag", "type": "textarea"},
+        ],
+        "template_text": """DAGVAARDING
+
+Aan: {gedaagde_naam}
+{gedaagde_adres}
+
+Namens: {eiser_naam}
+{eiser_adres}
+
+Te verschijnen voor: {rechtbank}
+Datum: {datum}
+
+1. PARTIJEN
+
+Eiser: {eiser_naam}
+Gedaagde: {gedaagde_naam}
+
+2. VORDERING
+
+Eiser vordert bij vonnis, uitvoerbaar bij voorraad:
+
+{vordering}
+
+3. FEITELIJKE GRONDSLAG
+
+{feitelijk_kader}
+
+4. JURIDISCHE GRONDSLAG
+
+{juridische_grondslag}
+
+5. BEWIJS
+
+Eiser beroept zich op alle wettelijke bewijsmiddelen.
+
+6. PROCESKOSTEN
+
+Eiser verzoekt gedaagde te veroordelen in de proceskosten.
+
+Aldus gedaan en betekend.
+
+De advocaat van eiser,
+
+___________________"""
+    }
+}
+
+# --- Document Drafter Endpoints ---
+
+@app.get("/api/templates")
+async def list_templates(
+    category: Optional[str] = None,
+    api_key: str = Depends(verify_api_key)
+):
+    """Haal alle templates op"""
+    if category:
+        templates = [t for t in DOCUMENT_TEMPLATES.values() if t["category"] == category]
+    else:
+        templates = list(DOCUMENT_TEMPLATES.values())
+    
+    return {
+        "templates": templates,
+        "total": len(templates),
+        "categories": list(set(t["category"] for t in DOCUMENT_TEMPLATES.values()))
+    }
+
+@app.get("/api/templates/{template_id}")
+async def get_template(
+    template_id: str,
+    api_key: str = Depends(verify_api_key)
+):
+    """Haal template details op"""
+    if template_id not in DOCUMENT_TEMPLATES:
+        raise HTTPException(status_code=404, detail="Template niet gevonden")
+    
+    return DOCUMENT_TEMPLATES[template_id]
+
+@app.post("/api/templates/generate", response_model=DocumentGenerateResponse)
+async def generate_document(
+    request: DocumentGenerateRequest,
+    api_key: str = Depends(verify_api_key)
+):
+    """Genereer document van template"""
+    if request.template_id not in DOCUMENT_TEMPLATES:
+        raise HTTPException(status_code=404, detail="Template niet gevonden")
+    
+    template = DOCUMENT_TEMPLATES[request.template_id]
+    
+    # Haal dossier gegevens op als dossier_id is opgegeven
+    dossier_data = {}
+    if request.dossier_id:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM dossiers WHERE id = ?", (request.dossier_id,))
+        dossier = cursor.fetchone()
+        if dossier:
+            dossier_data = {
+                "client_naam": dossier["client"] or "",
+                "dossier_nummer": dossier["id"][:8],
+            }
+        conn.close()
+    
+    # Haal analyse gegevens op als analysis_id is opgegeven
+    analysis_data = {}
+    if request.analysis_id:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM analyses WHERE id = ?", (request.analysis_id,))
+        analysis = cursor.fetchone()
+        if analysis:
+            analysis_data = {
+                "juridische_analyse": analysis["summary"] or "",
+                "conclusie": analysis["overall_advice"] or "",
+            }
+        conn.close()
+    
+    # Combineer alle data
+    all_fields = {**dossier_data, **analysis_data, **request.custom_fields}
+    
+    # Vervang placeholders in template
+    content = template["template_text"]
+    for key, value in all_fields.items():
+        content = content.replace(f"{{{key}}}", str(value))
+    
+    # Genereer document ID
+    document_id = f"doc_{uuid.uuid4().hex[:12]}"
+    
+    # Sla op in database
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        """INSERT INTO documents (id, template_id, dossier_id, content, title, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)""",
+        (document_id, request.template_id, request.dossier_id, content, template["name"], datetime.now().isoformat())
+    )
+    conn.commit()
+    conn.close()
+    
+    logger.info(f"Document generated: {document_id}")
+    
+    return DocumentGenerateResponse(
+        document_id=document_id,
+        content=content,
+        title=template["name"],
+        created_at=datetime.now().isoformat()
+    )
+
+@app.get("/api/documents/{doc_id}")
+async def get_document(
+    doc_id: str,
+    api_key: str = Depends(verify_api_key)
+):
+    """Haal gegenereerd document op"""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM documents WHERE id = ?", (doc_id,))
+    doc = cursor.fetchone()
+    conn.close()
+    
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document niet gevonden")
+    
+    return dict(doc)
+
+@app.post("/api/documents/{doc_id}/export")
+async def export_document(
+    doc_id: str,
+    format: str = "docx",
+    api_key: str = Depends(verify_api_key)
+):
+    """Exporteer document als Word of PDF"""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM documents WHERE id = ?", (doc_id,))
+    doc = cursor.fetchone()
+    conn.close()
+    
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document niet gevonden")
+    
+    content = doc["content"]
+    title = doc["title"]
+    
+    if format == "docx":
+        # Genereer Word document
+        from docx import Document
+        from docx.shared import Pt, Inches
+        from io import BytesIO
+        
+        docx = Document()
+        docx.add_heading(title, 0)
+        
+        # Voeg content toe met opmaak
+        paragraphs = content.split("\n\n")
+        for para in paragraphs:
+            if para.strip():
+                docx.add_paragraph(para.strip())
+        
+        # Sla op in buffer
+        buffer = BytesIO()
+        docx.save(buffer)
+        buffer.seek(0)
+        
+        return JSONResponse(
+            content={"message": "Document geëxporteerd als Word", "size": len(buffer.getvalue())},
+            headers={"Content-Disposition": f"attachment; filename={title}.docx"}
+        )
+    
+    elif format == "pdf":
+        # Genereer PDF
+        from reportlab.lib.pagesizes import A4
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+        from reportlab.lib.styles import getSampleStyleSheet
+        from io import BytesIO
+        
+        buffer = BytesIO()
+        pdf = SimpleDocTemplate(buffer, pagesize=A4)
+        styles = getSampleStyleSheet()
+        
+        story = []
+        story.append(Paragraph(title, styles['Title']))
+        story.append(Spacer(1, 12))
+        
+        paragraphs = content.split("\n\n")
+        for para in paragraphs:
+            if para.strip():
+                story.append(Paragraph(para.strip(), styles['Normal']))
+                story.append(Spacer(1, 6))
+        
+        pdf.build(story)
+        buffer.seek(0)
+        
+        return JSONResponse(
+            content={"message": "Document geëxporteerd als PDF", "size": len(buffer.getvalue())},
+            headers={"Content-Disposition": f"attachment; filename={title}.pdf"}
+        )
+    
+    else:
+        raise HTTPException(status_code=400, detail="Ongeldig formaat. Gebruik 'docx' of 'pdf'")
+
+@app.get("/api/documents")
+async def list_documents(
+    dossier_id: Optional[str] = None,
+    limit: int = 50,
+    offset: int = 0,
+    api_key: str = Depends(verify_api_key)
+):
+    """Haal alle gegenereerde documenten op"""
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    if dossier_id:
+        cursor.execute(
+            "SELECT * FROM documents WHERE dossier_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?",
+            (dossier_id, limit, offset)
+        )
+    else:
+        cursor.execute(
+            "SELECT * FROM documents ORDER BY created_at DESC LIMIT ? OFFSET ?",
+            (limit, offset)
+        )
+    
+    documents = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    
+    return {"documents": documents, "total": len(documents)}
 
 # --- Start Server ---
 if __name__ == "__main__":
