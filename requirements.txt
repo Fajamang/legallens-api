@@ -1,20 +1,11 @@
-# Core
-fastapi==0.115.0
-uvicorn[standard]==0.30.6
-python-multipart==0.0.9
-pydantic==2.9.2
+fastapi==0.141.1
+starlette==1.6.0
+uvicorn==0.30.6
+python-multipart==0.0.32
+pydantic==2.13.5
 python-dotenv==1.0.1
-
-# HTTP & Search
-requests==2.32.3
-duckduckgo-search==6.3.0
-
-# PDF Processing
-PyPDF2==3.0.1
-
-# Document Generation
-python-docx==1.1.0
-reportlab==4.0.7
-
-# Utilities
-python-dateutil==2.9.0
+httpx==0.28.1
+pypdf==6.10.0
+python-docx==1.2.0
+reportlab==4.4.9
+defusedxml==0.7.1
