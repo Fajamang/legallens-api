@@ -728,6 +728,9 @@
             <nav class="sidebar-nav">
                 <div class="nav-section">
                     <div class="nav-section-title">Hoofdmenu</div>
+                    <div class="nav-item" onclick="showView('drafter', this)">
+         <span class="icon">📝</span><span>Document Drafter</span>
+         </div>
                     <div class="nav-item active" onclick="showView('dashboard', this)">
                         <span class="icon"></span><span>Dashboard</span>
                     </div>
@@ -780,6 +783,81 @@
                     </div>
                 </div>
             </div>
+
+            <!-- DOCUMENT DRAFTER VIEW -->
+<div id="view-drafter" class="view">
+    <div class="section-card">
+        <div class="section-header">
+            <div class="section-title">📝 Document Drafter</div>
+            <div style="font-size: 0.9em; color: var(--text-light);">
+                Genereer professionele juridische documenten
+            </div>
+        </div>
+        
+        <div id="drafter-step-1">
+            <h3 style="margin-bottom: 16px;">Kies een template:</h3>
+            <div id="template-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px;">
+                <!-- Templates worden hier geladen -->
+            </div>
+        </div>
+        
+        <div id="drafter-step-2" style="display: none;">
+            <button class="btn btn-secondary" onclick="backToTemplates()" style="margin-bottom: 20px;">
+                ← Terug naar templates
+            </button>
+            
+            <h3 id="selected-template-name" style="margin-bottom: 16px;"></h3>
+            <p id="selected-template-description" style="color: var(--text-light); margin-bottom: 24px;"></p>
+            
+            <div id="template-fields" style="display: flex; flex-direction: column; gap: 16px;">
+                <!-- Velden worden hier geladen -->
+            </div>
+            
+            <div style="margin-top: 24px; display: flex; gap: 12px;">
+                <button class="btn btn-primary" onclick="generateDocument()">
+                     Genereer Document
+                </button>
+                <button class="btn btn-secondary" onclick="backToTemplates()">
+                    Annuleren
+                </button>
+            </div>
+        </div>
+        
+        <div id="drafter-step-3" style="display: none;">
+            <div class="section-header">
+                <div class="section-title">📄 Document Preview</div>
+                <div style="display: flex; gap: 12px;">
+                    <button class="btn btn-primary" onclick="exportDocument('docx')">
+                        💾 Export Word
+                    </button>
+                    <button class="btn btn-primary" onclick="exportDocument('pdf')">
+                         Export PDF
+                    </button>
+                    <button class="btn btn-secondary" onclick="backToTemplates()">
+                        Nieuw Document
+                    </button>
+                </div>
+            </div>
+            
+            <div id="document-preview" style="background: white; padding: 32px; border: 1px solid var(--border); border-radius: 8px; font-family: 'Times New Roman', serif; line-height: 1.6; white-space: pre-wrap;">
+                <!-- Document content wordt hier geladen -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Gegenereerde Documenten -->
+    <div class="section-card">
+        <div class="section-header">
+            <div class="section-title">📁 Mijn Documenten</div>
+        </div>
+        <div id="my-documents" class="analysis-list">
+            <div class="empty-state">
+                <div class="icon">📄</div>
+                <p>Nog geen documenten gegenereerd</p>
+            </div>
+        </div>
+    </div>
+</div>
             
             <div class="content-area">
                 <!-- DASHBOARD -->
@@ -1251,6 +1329,176 @@
                 `;
                 return;
             }
+
+            let selectedTemplate = null;
+let currentDocumentId = null;
+
+// Laad templates
+async function loadTemplates() {
+    try {
+        const response = await fetch(`${API_BASE}/api/templates`);
+        const data = await response.json();
+        
+        const container = document.getElementById('template-list');
+        container.innerHTML = data.templates.map(t => `
+            <div class="dossier-item" onclick="selectTemplate('${t.id}')" style="cursor: pointer;">
+                <div>
+                    <h4>${t.name}</h4>
+                    <div class="dossier-meta">${t.category}</div>
+                    <p style="margin-top: 8px; font-size: 0.9em;">${t.description}</p>
+                </div>
+                <button class="btn btn-sm btn-primary">Selecteer →</button>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Error loading templates:', error);
+    }
+}
+
+function selectTemplate(templateId) {
+    selectedTemplate = DOCUMENT_TEMPLATES[templateId];
+    
+    document.getElementById('drafter-step-1').style.display = 'none';
+    document.getElementById('drafter-step-2').style.display = 'block';
+    document.getElementById('selected-template-name').textContent = selectedTemplate.name;
+    document.getElementById('selected-template-description').textContent = selectedTemplate.description;
+    
+    const fieldsContainer = document.getElementById('template-fields');
+    fieldsContainer.innerHTML = selectedTemplate.fields.map(field => `
+        <div class="form-group">
+            <label>${field.label}:</label>
+            <input type="${field.type}" 
+                   id="field-${field.name}" 
+                   placeholder="${field.label}"
+                   value="${field.default || ''}">
+        </div>
+    `).join('');
+}
+
+function backToTemplates() {
+    document.getElementById('drafter-step-1').style.display = 'block';
+    document.getElementById('drafter-step-2').style.display = 'none';
+    document.getElementById('drafter-step-3').style.display = 'none';
+    selectedTemplate = null;
+    currentDocumentId = null;
+}
+
+async function generateDocument() {
+    const customFields = {};
+    selectedTemplate.fields.forEach(field => {
+        const value = document.getElementById(`field-${field.name}`).value;
+        if (value) {
+            customFields[field.name] = value;
+        }
+    });
+    
+    try {
+        const response = await fetch(`${API_BASE}/api/templates/generate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                template_id: selectedTemplate.id,
+                custom_fields: customFields
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Document generatie mislukt');
+        }
+        
+        const result = await response.json();
+        currentDocumentId = result.document_id;
+        
+        document.getElementById('drafter-step-2').style.display = 'none';
+        document.getElementById('drafter-step-3').style.display = 'block';
+        document.getElementById('document-preview').textContent = result.content;
+        
+        loadMyDocuments();
+        
+    } catch (error) {
+        alert('Fout: ' + error.message);
+    }
+}
+
+async function exportDocument(format) {
+    if (!currentDocumentId) return;
+    
+    try {
+        const response = await fetch(`${API_BASE}/api/documents/${currentDocumentId}/export?format=${format}`, {
+            method: 'POST'
+        });
+        
+        if (!response.ok) {
+            throw new Error('Export mislukt');
+        }
+        
+        const data = await response.json();
+        alert(`Document geëxporteerd als ${format.toUpperCase()}!`);
+        
+    } catch (error) {
+        alert('Fout: ' + error.message);
+    }
+}
+
+async function loadMyDocuments() {
+    try {
+        const response = await fetch(`${API_BASE}/api/documents`);
+        const data = await response.json();
+        
+        const container = document.getElementById('my-documents');
+        
+        if (data.documents.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="icon">📄</div>
+                    <p>Nog geen documenten gegenereerd</p>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = data.documents.map(doc => `
+            <div class="analysis-item">
+                <div class="analysis-header">
+                    <div>
+                        <div class="analysis-title">${doc.title}</div>
+                        <div class="analysis-date">${new Date(doc.created_at).toLocaleString('nl-NL')}</div>
+                    </div>
+                    <button class="btn btn-sm btn-primary" onclick="viewDocument('${doc.id}')">Bekijk →</button>
+                </div>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Error loading documents:', error);
+    }
+}
+
+async function viewDocument(docId) {
+    try {
+        const response = await fetch(`${API_BASE}/api/documents/${docId}`);
+        const doc = await response.json();
+        
+        currentDocumentId = docId;
+        
+        document.getElementById('drafter-step-1').style.display = 'none';
+        document.getElementById('drafter-step-2').style.display = 'none';
+        document.getElementById('drafter-step-3').style.display = 'block';
+        document.getElementById('document-preview').textContent = doc.content;
+    } catch (error) {
+        alert('Fout: ' + error.message);
+    }
+}
+
+// Update showView functie om templates te laden
+const originalShowView = showView;
+showView = function(viewName, navElement) {
+    originalShowView(viewName, navElement);
+    
+    if (viewName === 'drafter') {
+        loadTemplates();
+        loadMyDocuments();
+    }
+};
             
             container.innerHTML = dossiers.map(d => {
                 const dossierAnalyses = analyses.filter(a => a.dossierId === d.id);
