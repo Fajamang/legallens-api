@@ -40,115 +40,86 @@ DB_PATH = Path("data/legallens.db")
 
 def init_db():
     """Initialiseer SQLite database"""
-    DB_PATH.parent.mkdir(exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
+    # Zorg dat de data map bestaat
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    
+    # Maak verbinding
+    conn = sqlite3.connect(str(DB_PATH))
     cursor = conn.cursor()
     
-    # Dossiers tabel
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS dossiers (
-            id TEXT PRIMARY KEY,
-            name TEXT NOT NULL,
-            client TEXT,
-            type TEXT,
-            status TEXT DEFAULT 'active',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-
-        # Documenten tabel
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS documents (
-            id TEXT PRIMARY KEY,
-            template_id TEXT NOT NULL,
-            dossier_id TEXT,
-            content TEXT NOT NULL,
-            title TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (dossier_id) REFERENCES dossiers(id) ON DELETE SET NULL
-        )
-    ''')
-    
-    # Bestanden tabel
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS files (
-            id TEXT PRIMARY KEY,
-            dossier_id TEXT NOT NULL,
-            filename TEXT NOT NULL,
-            original_name TEXT NOT NULL,
-            size INTEGER,
-            uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (dossier_id) REFERENCES dossiers(id) ON DELETE CASCADE
-        )
-    ''')
-    
-    # Analyses tabel
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS analyses (
-            id TEXT PRIMARY KEY,
-            dossier_id TEXT,
-            document_type TEXT,
-            summary TEXT,
-            parties_involved TEXT,
-            key_dates TEXT,
-            risks TEXT,
-            overall_advice TEXT,
-            sentiment_score REAL,
-            action_plan TEXT,
-            negotiation_strategy TEXT,
-            due_diligence_findings TEXT,
-            time_saved_hours REAL,
-            mode TEXT DEFAULT 'standard',
-            analysis_type TEXT DEFAULT 'contract',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (dossier_id) REFERENCES dossiers(id) ON DELETE SET NULL
-        )
-    ''')
-    
-    # Dossiers tabel
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS dossiers (
-            id TEXT PRIMARY KEY,
-            name TEXT NOT NULL,
-            client TEXT,
-            type TEXT,
-            status TEXT DEFAULT 'active',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    
-    conn.commit()
-    conn.close()
-    logger.info("Database initialized")
-    
-    # Analyses tabel
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS analyses (
-            id TEXT PRIMARY KEY,
-            dossier_id TEXT,
-            document_type TEXT,
-            summary TEXT,
-            parties_involved TEXT,
-            key_dates TEXT,
-            risks TEXT,
-            overall_advice TEXT,
-            sentiment_score REAL,
-            action_plan TEXT,
-            negotiation_strategy TEXT,
-            due_diligence_findings TEXT,
-            time_saved_hours REAL,
-            mode TEXT DEFAULT 'standard',
-            analysis_type TEXT DEFAULT 'contract',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (dossier_id) REFERENCES dossiers(id) ON DELETE SET NULL
-        )
-    ''')
-    
-    conn.commit()
-    conn.close()
-    logger.info("Database initialized")
+    try:
+        # 1. Dossiers tabel
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS dossiers (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                client TEXT,
+                type TEXT,
+                status TEXT DEFAULT 'active',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        # 2. Bestanden tabel
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS files (
+                id TEXT PRIMARY KEY,
+                dossier_id TEXT NOT NULL,
+                filename TEXT NOT NULL,
+                original_name TEXT NOT NULL,
+                size INTEGER,
+                uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (dossier_id) REFERENCES dossiers(id) ON DELETE CASCADE
+            )
+        ''')
+        
+        # 3. Analyses tabel
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS analyses (
+                id TEXT PRIMARY KEY,
+                dossier_id TEXT,
+                document_type TEXT,
+                summary TEXT,
+                parties_involved TEXT,
+                key_dates TEXT,
+                risks TEXT,
+                overall_advice TEXT,
+                sentiment_score REAL,
+                action_plan TEXT,
+                negotiation_strategy TEXT,
+                due_diligence_findings TEXT,
+                time_saved_hours REAL,
+                mode TEXT DEFAULT 'standard',
+                analysis_type TEXT DEFAULT 'contract',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (dossier_id) REFERENCES dossiers(id) ON DELETE SET NULL
+            )
+        ''')
+        
+        # 4. Documenten tabel (voor Document Drafter)
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS documents (
+                id TEXT PRIMARY KEY,
+                template_id TEXT NOT NULL,
+                dossier_id TEXT,
+                content TEXT NOT NULL,
+                title TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (dossier_id) REFERENCES dossiers(id) ON DELETE SET NULL
+            )
+        ''')
+        
+        # Opslaen en sluiten (PAS NA ALLES)
+        conn.commit()
+        logger.info("Database tables created successfully")
+        
+    except Exception as e:
+        logger.error(f"Database initialization error: {e}")
+        raise
+    finally:
+        conn.close()
+        logger.info("Database initialized and connection closed")
 
 # Initialiseer database
 init_db()
