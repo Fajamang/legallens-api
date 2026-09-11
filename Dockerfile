@@ -1,35 +1,39 @@
-# LegalLens Pro - Production Dockerfile
+# LegalLens Pro - Production Dockerfile v9.0
 FROM python:3.11-slim
 
-# Set environment variables
+# Environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV PORT=7860
+ENV PYTHONPATH=/app
 
-# Set working directory
+# Working directory
 WORKDIR /app
 
-# Install system dependencies
+# System dependencies (voor PDF parsing en database)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
+    g++ \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
+# Python dependencies
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
+# Application code
 COPY . .
 
-# Create directories for database and uploads
-RUN mkdir -p uploads && chmod 755 uploads
+# Create necessary directories
+RUN mkdir -p uploads data static && \
+    chmod -R 755 uploads data static
 
 # Expose port
 EXPOSE 7860
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:7860/health', timeout=5)" || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD python -c "import requests; r = requests.get('http://localhost:7860/health', timeout=5); exit(0 if r.status_code == 200 else 1)" || exit 1
 
-# Run the application
+# Run application
 CMD ["python", "app.py"]
