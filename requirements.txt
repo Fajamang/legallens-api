@@ -12,8 +12,5 @@ duckduckgo-search==6.3.0
 # PDF Processing
 PyPDF2==3.0.1
 
-# Database
-sqlite3
-
 # Utilities
 python-dateutil==2.9.0
