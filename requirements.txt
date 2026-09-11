@@ -12,9 +12,9 @@ duckduckgo-search==6.3.0
 # PDF Processing
 PyPDF2==3.0.1
 
-# Utilities
-python-dateutil==2.9.0
-
 # Document Generation
 python-docx==1.1.0
 reportlab==4.0.7
+
+# Utilities
+python-dateutil==2.9.0
